@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Air Monitor</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Custom Google Font: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .bg-grid-pattern {
+            background-image: linear-gradient(to right, #e0e7ff 1px, transparent 1px), linear-gradient(to bottom, #e0e7ff 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+
+    <!-- Global Header -->
+    <header class="bg-indigo-600 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center relative overflow-hidden">
+            <!-- Decorative background elements -->
+            <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+            <div class="absolute -left-6 top-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="w-10 h-10 bg-white/20 backdrop-blur-xs text-white rounded-xl flex items-center justify-center shadow-xs">
+                    <i class="ph ph-wind text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-indigo-200 font-medium tracking-wider uppercase" id="header-subtitle">Facilities Team</p>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight" id="header-title">Campus Air</h1>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center gap-2 bg-indigo-900/40 p-1.5 rounded-2xl border border-indigo-400/30 relative z-10 backdrop-blur-xs">
+                <button onclick="switchPage('home')" class="nav-btn text-white bg-indigo-700/80 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-xs" data-target="home">
+                    <i class="ph-fill ph-house text-lg"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchPage('map')" class="nav-btn text-indigo-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="map">
+                    <i class="ph ph-map-pin-line text-lg"></i>
+                    <span>Campus Zones</span>
+                </button>
+                <button onclick="switchPage('analytics')" class="nav-btn text-indigo-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="analytics">
+                    <i class="ph ph-chart-line-up text-lg"></i>
+                    <span>Analytics</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="relative">
+                    <div class="w-10 h-10 bg-white/20 backdrop-blur-xs text-white rounded-xl flex justify-center items-center cursor-pointer hover:bg-white/30 transition" onclick="openBottomSheet('alerts')">
+                        <i class="ph ph-wind text-xl"></i>
+                    </div>
+                    <span class="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-indigo-600 rounded-full" id="global-alert-badge"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 pb-24 md:pb-8">
+        
+        <!-- PAGE: DASHBOARD -->
+        <div id="page-home" class="page space-y-6">
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Main AQI Gauge Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
+                    <h3 class="text-sm font-semibold text-slate-500 mb-4">Campus Average AQI</h3>
+                    
+                    <div class="relative w-36 h-36 flex justify-center items-center my-2">
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-slate-100" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
+                            <path class="text-indigo-500" stroke-dasharray="65, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
+                        </svg>
+                        <div class="absolute flex flex-col items-center">
+                            <span class="text-4xl font-bold text-slate-800">65</span>
+                            <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-widest mt-0.5">Moderate</span>
+                        </div>
+                    </div>
+                    <p class="text-xs text-slate-400 mt-2">Overall AQI calculated across all 5 active campus sensors</p>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-indigo-200 transition" onclick="switchPage('map')">
+                        <div class="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex justify-center items-center mb-4">
+                            <i class="ph-fill ph-buildings text-xl"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-800" id="stat-nodes">5</h2>
+                            <p class="text-xs text-slate-500 font-medium mt-1">Monitored Campus Zones</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex justify-center items-center mb-4">
+                            <i class="ph-fill ph-fan text-xl animate-[spin_3s_linear_infinite]"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-3xl font-bold text-slate-800" id="stat-fans">2</h2>
+                            <p class="text-xs text-slate-500 font-medium mt-1">Exhaust Fans Automatically ON</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between sm:col-span-2">
+                        <div class="flex justify-between items-center">
+                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex justify-center items-center">
+                                <i class="ph ph-thermometer text-xl"></i>
+                            </div>
+                            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">Normal Range</span>
+                        </div>
+                        <div class="mt-4 flex justify-between items-end">
+                            <div>
+                                <h3 class="text-xl font-bold text-slate-800">24.5°C / 52% RH</h3>
+                                <p class="text-xs text-slate-500 font-medium mt-1">Campus Ambient Environment</p>
+                            </div>
+                            <span class="text-xs text-indigo-600 font-semibold cursor-pointer" onclick="switchPage('analytics')">View Charts &rarr;</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Priority Alerts -->
+            <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Unsafe Emission Alerts</h3>
+                    <span class="text-xs font-semibold text-indigo-600 cursor-pointer" onclick="switchPage('map')">View All Zones</span>
+                </div>
+                <div id="dashboard-alerts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- PAGE: MAP / ZONES -->
+        <div id="page-map" class="page hidden space-y-6">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
+                <i class="ph ph-magnifying-glass text-indigo-400 text-lg"></i>
+                <input type="text" id="zone-search" oninput="filterZones(this.value)" placeholder="Search campus zones..." class="bg-transparent border-none outline-none text-sm w-full text-slate-700">
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="nodes-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- PAGE: ANALYTICS -->
+        <div id="page-analytics" class="page hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campus Carbon Footprint</h3>
+                            <p class="text-xl font-bold text-slate-800 mt-1">Daily CO₂ Emission Trends</p>
+                        </div>
+                        <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                            <i class="ph ph-trend-down text-2xl"></i>
+                        </div>
+                    </div>
+                    
+                    <!-- CSS Bar Chart -->
+                    <div class="flex items-end justify-between h-48 gap-3 mt-6 pt-4 border-b border-slate-100">
+                        <div class="w-full bg-sky-100 hover:bg-sky-200 rounded-t-lg h-[40%] relative group cursor-pointer transition">
+                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">410 ppm</span>
+                        </div>
+                        <div class="w-full bg-sky-100 hover:bg-sky-200 rounded-t-lg h-[55%] relative group cursor-pointer transition">
+                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">520 ppm</span>
+                        </div>
+                        <div class="w-full bg-sky-100 hover:bg-sky-200 rounded-t-lg h-[30%] relative group cursor-pointer transition">
+                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">380 ppm</span>
+                        </div>
+                        <div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg h-[85%] relative group cursor-pointer transition shadow-[0_0_15px_rgba(99,102,241,0.3)]">
+                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-indigo-600 opacity-100 transition">850 ppm</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-t-lg h-[20%]"></div>
+                        <div class="w-full bg-slate-100 rounded-t-lg h-[20%]"></div>
+                    </div>
+                    <div class="flex justify-between mt-3 text-xs font-semibold text-slate-400 uppercase">
+                        <span>Mon</span><span>Tue</span><span>Wed</span><span class="text-indigo-600">Thu (Today)</span><span>Fri</span><span>Sat</span>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 mb-4">Highest Pollutants Today</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-xs mb-1.5 font-medium">
+                                    <span class="text-slate-600">PM2.5 (Particulate)</span>
+                                    <span class="text-rose-600 font-bold">120 µg/m³</span>
+                                </div>
+                                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-rose-500 w-[75%] rounded-full"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1.5 font-medium">
+                                    <span class="text-slate-600">NO₂ (Nitrogen Dioxide)</span>
+                                    <span class="text-amber-600 font-bold">45 ppb</span>
+                                </div>
+                                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-amber-400 w-[45%] rounded-full"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-xs mb-1.5 font-medium">
+                                    <span class="text-slate-600">CO₂ (Carbon Dioxide)</span>
+                                    <span class="text-indigo-600 font-bold">850 ppm</span>
+                                </div>
+                                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                                    <div class="h-full bg-indigo-500 w-[60%] rounded-full"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="w-full mt-6 py-3 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition">
+                        Export Environmental Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 shadow-lg">
+        <button onclick="switchPage('home')" class="nav-btn text-indigo-600 flex flex-col items-center gap-1 w-16" data-target="home">
+            <i class="ph-fill ph-house text-2xl"></i>
+            <span class="text-[10px] font-semibold">Home</span>
+        </button>
+        <button onclick="switchPage('map')" class="nav-btn text-slate-400 hover:text-indigo-600 flex flex-col items-center gap-1 w-16 transition" data-target="map">
+            <i class="ph ph-map-pin-line text-2xl"></i>
+            <span class="text-[10px] font-semibold">Zones</span>
+        </button>
+        <button onclick="switchPage('analytics')" class="nav-btn text-slate-400 hover:text-indigo-600 flex flex-col items-center gap-1 w-16 transition" data-target="analytics">
+            <i class="ph ph-chart-line-up text-2xl"></i>
+            <span class="text-[10px] font-semibold">Analytics</span>
+        </button>
+    </nav>
+
+    <!-- Modal Backdrop -->
+    <div id="sheet-backdrop" class="fixed inset-0 bg-slate-900/50 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-xs" onclick="closeBottomSheet()"></div>
+    
+    <!-- Modal Container -->
+    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-md bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-center p-3 cursor-pointer md:hidden" onclick="closeBottomSheet()">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+        </div>
+        <div id="sheet-content" class="p-6 overflow-y-auto no-scrollbar">
+            <!-- Content injected via JS -->
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Mock Data Store ---
+        const campusNodes = [
+            { 
+                id: 'NODE-01', location: 'Chemistry Lab', type: 'Indoor', aqi: 45, co2: 850, 
+                pm25: 12, co: 1.2, no2: 15, status: 'Good', fanStatus: 'OFF'
+            },
+            { 
+                id: 'NODE-02', location: 'Main Gate Parking', type: 'Outdoor', aqi: 135, co2: 450, 
+                pm25: 85, co: 5.4, no2: 60, status: 'Poor', fanStatus: 'ON'
+            },
+            { 
+                id: 'NODE-03', location: 'Block B Rooftop', type: 'Outdoor', aqi: 30, co2: 410, 
+                pm25: 8, co: 0.5, no2: 10, status: 'Good', fanStatus: 'OFF'
+            },
+            { 
+                id: 'NODE-04', location: 'Student Cafeteria', type: 'Indoor', aqi: 110, co2: 1250, 
+                pm25: 45, co: 2.1, no2: 25, status: 'Poor', fanStatus: 'ON'
+            },
+            { 
+                id: 'NODE-05', location: 'Library Ground Floor', type: 'Indoor', aqi: 40, co2: 550, 
+                pm25: 10, co: 0.8, no2: 12, status: 'Good', fanStatus: 'OFF'
+            }
+        ];
+
+        // --- Navigation Logic ---
+        const pageConfigs = {
+            'home': { title: 'Campus Air', sub: 'Facilities Team' },
+            'map': { title: 'Campus Zones', sub: 'Node Locations' },
+            'analytics': { title: 'Analytics', sub: 'Emission Tracking' }
+        };
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            
+            document.getElementById('header-title').innerText = pageConfigs[pageId].title;
+            document.getElementById('header-subtitle').innerText = pageConfigs[pageId].sub;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (btn.dataset.target === pageId) {
+                    btn.classList.add('text-white');
+                    btn.classList.remove('text-indigo-200', 'text-slate-400');
+                    if (icon) icon.classList.replace('ph', 'ph-fill');
+                } else {
+                    btn.classList.remove('text-white');
+                    btn.classList.add('text-indigo-200');
+                    if (icon) icon.classList.replace('ph-fill', 'ph');
+                }
+            });
+
+            if(pageId === 'home') renderHome();
+            if(pageId === 'map') renderMap();
+            closeBottomSheet();
+        }
+
+        const statusConfig = {
+            'Good': { color: 'sky', icon: 'ph-check-circle', text: 'Air Quality Good' },
+            'Moderate': { color: 'amber', icon: 'ph-warning', text: 'Air Quality Moderate' },
+            'Poor': { color: 'rose', icon: 'ph-warning-octagon', text: 'Unsafe Emission Levels' }
+        };
+
+        function renderHome() {
+            const activeFans = campusNodes.filter(n => n.fanStatus === 'ON');
+            const poorNodes = campusNodes.filter(n => n.status === 'Poor');
+            
+            document.getElementById('stat-nodes').innerText = campusNodes.length;
+            document.getElementById('stat-fans').innerText = activeFans.length;
+            
+            document.getElementById('global-alert-badge').style.display = poorNodes.length > 0 ? 'block' : 'none';
+
+            const container = document.getElementById('dashboard-alerts-container');
+            container.innerHTML = '';
+
+            if (poorNodes.length === 0) {
+                container.innerHTML = `<div class="p-4 text-center text-slate-500 text-sm bg-white rounded-2xl border border-slate-100">All zones are operating within safe parameters.</div>`;
+                return;
+            }
+
+            poorNodes.forEach(node => {
+                const conf = statusConfig[node.status];
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200 flex items-center justify-between cursor-pointer hover:border-rose-200 transition" onclick="viewNodeDetails('${node.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex justify-center items-center shrink-0">
+                                <i class="ph-fill ${conf.icon} text-2xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800">${node.location}</h4>
+                                <p class="text-[11px] text-slate-500 uppercase tracking-wider mt-0.5">AQI: ${node.aqi} | CO₂: ${node.co2} ppm</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <span class="text-[10px] font-bold text-white bg-rose-500 px-2 py-1 rounded-md mb-1 animate-pulse">POOR</span>
+                            <span class="text-[10px] font-semibold text-indigo-600 flex items-center gap-1"><i class="ph-fill ph-fan"></i> Fan Auto-ON</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderMap(query = '') {
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+
+            const filtered = campusNodes.filter(n => n.location.toLowerCase().includes(query.toLowerCase()));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm col-span-full">No campus zones found matching "${query}"</div>`;
+                return;
+            }
+
+            filtered.forEach(node => {
+                const conf = statusConfig[node.status];
+                const border = node.status === 'Poor' ? 'border-rose-200' : 'border-slate-200';
+                
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-xs border ${border} flex items-center justify-between cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-${conf.color}-50 text-${conf.color}-600 rounded-full flex justify-center items-center">
+                                <i class="ph-fill ${conf.icon} text-xl"></i>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800">${node.location}</h4>
+                                <p class="text-xs text-slate-400 font-medium">${node.id} • ${node.type}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-slate-800">${node.aqi} AQI</p>
+                            <p class="text-[11px] font-bold text-${conf.color}-600 uppercase mt-0.5">${node.status}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterZones(query) {
+            renderMap(query);
+        }
+
+        // --- Bottom Sheet / Modal Logic ---
+        const backdrop = document.getElementById('sheet-backdrop');
+        const sheet = document.getElementById('bottom-sheet');
+        const sheetContent = document.getElementById('sheet-content');
+
+        function openBottomSheet(type) {
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+
+            if (type === 'alerts') {
+                sheetContent.innerHTML = `
+                    <div class="text-center mb-6">
+                        <div class="inline-flex w-16 h-16 bg-sky-100 text-sky-600 rounded-full justify-center items-center mb-3">
+                            <i class="ph ph-cloud-check text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800">System Online</h3>
+                        <p class="text-sm text-slate-500 mt-1">All sensor nodes are connected to Wi-Fi.</p>
+                    </div>
+                    <button class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition" onclick="closeBottomSheet()">Dismiss</button>
+                `;
+            }
+        }
+
+        function viewNodeDetails(id) {
+            const data = campusNodes.find(n => n.id === id);
+            if (!data) return;
+
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+
+            const conf = statusConfig[data.status];
+            const isFanOn = data.fanStatus === 'ON';
+            
+            sheetContent.innerHTML = `
+                <div class="flex items-center gap-4 mb-5">
+                    <div class="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex justify-center items-center shrink-0">
+                        <i class="ph-fill ${data.type === 'Indoor' ? 'ph-door' : 'ph-tree'} text-3xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800">${data.location}</h3>
+                        <p class="text-sm font-medium text-slate-400">ESP32 Node: ${data.id}</p>
+                    </div>
+                </div>
+
+                <div class="p-3 mb-5 rounded-xl border ${isFanOn ? 'bg-indigo-50 border-indigo-100 text-indigo-800' : 'bg-slate-50 border-slate-100 text-slate-600'} flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-fill ph-fan ${isFanOn ? 'animate-[spin_2s_linear_infinite] text-indigo-600' : ''} text-xl"></i>
+                        <span class="text-sm font-bold">Cooling/Exhaust Fan</span>
+                    </div>
+                    <span class="text-xs font-bold px-2 py-1 rounded bg-white shadow-xs uppercase">${data.fanStatus}</span>
+                </div>
+
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Sensor Array</h4>
+                
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">PM2.5 (Dust)</span>
+                        <div class="flex items-end justify-between">
+                            <span class="text-lg font-bold text-slate-800">${data.pm25}</span>
+                            <span class="text-[10px] text-slate-400 pb-1">µg/m³</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border ${data.co2 > 1000 ? 'border-rose-200 bg-rose-50' : 'border-slate-200'} shadow-xs flex flex-col justify-between">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">CO₂ Emission</span>
+                        <div class="flex items-end justify-between">
+                            <span class="text-lg font-bold ${data.co2 > 1000 ? 'text-rose-600' : 'text-slate-800'}">${data.co2}</span>
+                            <span class="text-[10px] text-slate-400 pb-1">ppm</span>
+                        </div>
+                    </div>
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
+                        <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">NO₂ Gas</span>
+                        <div class="flex items-end justify-between">
+                            <span class="text-lg font-bold text-slate-800">${data.no2}</span>
+                            <span class="text-[10px] text-slate-400 pb-1">ppb</span>
+                        </div>
+                    </div>
+                    <div class="bg-indigo-600 p-3 rounded-xl shadow-xs text-white flex flex-col justify-between">
+                        <span class="text-[10px] text-white/80 font-bold uppercase mb-1">Calculated AQI</span>
+                        <div class="flex items-center justify-between">
+                            <span class="text-2xl font-bold">${data.aqi}</span>
+                            <i class="ph-fill ${conf.icon} text-2xl opacity-80"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="w-full py-3.5 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 transition" onclick="closeBottomSheet()">Close Telemetry</button>
+            `;
+        }
+
+        function closeBottomSheet() {
+            backdrop.classList.add('pointer-events-none');
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            sheet.classList.add('translate-y-full', 'opacity-0');
+            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        // Initialize App
+        renderHome();
+    </script>
+</body>
+</html>

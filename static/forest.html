@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi-Hazard Forest Protection</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Custom Google Font: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f8fafc;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .bg-topographic {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 20px 20px;
+            background-color: #f8fafc;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+
+    <!-- Global Header -->
+    <header class="bg-emerald-800 text-white sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-emerald-700 text-white rounded-xl flex items-center justify-center shadow-inner">
+                    <i class="ph-fill ph-tree text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-emerald-200 font-medium" id="header-subtitle">Ranger Dashboard</p>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight" id="header-title">ForestGuard</h1>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center gap-2 bg-emerald-900/60 p-1.5 rounded-2xl border border-emerald-700/50">
+                <button onclick="switchPage('home')" class="nav-btn text-white bg-emerald-700 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-xs" data-target="home">
+                    <i class="ph-fill ph-squares-four text-lg"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchPage('map')" class="nav-btn text-emerald-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="map">
+                    <i class="ph ph-map-trifold text-lg"></i>
+                    <span>Zones</span>
+                </button>
+                <button onclick="switchPage('sensors')" class="nav-btn text-emerald-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="sensors">
+                    <i class="ph ph-waveform text-lg"></i>
+                    <span>Telemetry</span>
+                </button>
+                <button onclick="switchPage('settings')" class="nav-btn text-emerald-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="settings">
+                    <i class="ph ph-sliders-horizontal text-lg"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-10 h-10 bg-emerald-700/60 text-emerald-100 rounded-xl flex justify-center items-center cursor-pointer hover:bg-emerald-600 transition" onclick="openBottomSheet('systemStatus')">
+                        <i class="ph ph-broadcast text-xl animate-pulse"></i>
+                    </div>
+                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-emerald-800 rounded-full" id="global-alert-badge"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 pb-24 md:pb-8">
+        
+        <!-- PAGE: DASHBOARD -->
+        <div id="page-home" class="page space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                    <div class="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph-fill ph-tree text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800" id="stat-active-nodes">0</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Active Sensor Nodes</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-red-200 transition" onclick="switchPage('map')">
+                    <div class="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph-fill ph-warning-octagon text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800" id="stat-critical-alerts">0</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Critical Hazard Alerts</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph ph-radio text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">LoRa Mesh</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Primary Comms Operational</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-emerald-200 transition" onclick="switchPage('sensors')">
+                    <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph ph-waveform text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Live Telemetry</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">DHT22, MQ-2, SW-420</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Hazards Section -->
+            <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Live Hazard Alerts</h3>
+                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live Monitoring
+                    </span>
+                </div>
+                <div id="alerts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- PAGE: MAP / ZONES -->
+        <div id="page-map" class="page hidden space-y-6">
+            <div class="bg-topographic p-6 rounded-2xl border border-slate-200 shadow-xs">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Forest Zone Grid</h3>
+                    <span class="text-xs text-slate-500 font-medium">Interactive Sensor Node List</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="nodes-container">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE: SENSORS -->
+        <div id="page-sensors" class="page hidden space-y-6">
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800">Network Hardware Telemetry</h3>
+                    <p class="text-xs text-slate-500">Real-time readings from ESP32 nodes</p>
+                </div>
+                <button onclick="renderSensors()" class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition">
+                    <i class="ph ph-arrows-counter-clockwise mr-1"></i> Refresh Data
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="telemetry-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- PAGE: SETTINGS -->
+        <div id="page-settings" class="page hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-radio text-2xl text-emerald-700"></i>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">LoRa Backup Comms</p>
+                            <p class="text-xs text-slate-400">915 MHz Frequency Band</p>
+                        </div>
+                    </div>
+                    <div class="w-11 h-6 bg-emerald-600 rounded-full relative cursor-pointer">
+                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-xs"></div>
+                    </div>
+                </div>
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-bell-ringing text-2xl text-emerald-700"></i>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">Ranger Dispatch Push Alerts</p>
+                            <p class="text-xs text-slate-400">Instant notification on acoustic / thermal anomaly</p>
+                        </div>
+                    </div>
+                    <div class="w-11 h-6 bg-emerald-600 rounded-full relative cursor-pointer">
+                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-xs"></div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="openBottomSheet('systemStatus')" class="w-full py-3.5 text-emerald-800 font-semibold bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition">
+                Run Hardware Diagnostics
+            </button>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 shadow-lg">
+        <button onclick="switchPage('home')" class="nav-btn text-emerald-700 flex flex-col items-center gap-1 w-16" data-target="home">
+            <i class="ph-fill ph-squares-four text-2xl"></i>
+            <span class="text-[10px] font-semibold">Dashboard</span>
+        </button>
+        <button onclick="switchPage('map')" class="nav-btn text-slate-400 hover:text-emerald-700 flex flex-col items-center gap-1 w-16 transition" data-target="map">
+            <i class="ph ph-map-trifold text-2xl"></i>
+            <span class="text-[10px] font-semibold">Zones</span>
+        </button>
+        <button onclick="switchPage('sensors')" class="nav-btn text-slate-400 hover:text-emerald-700 flex flex-col items-center gap-1 w-16 transition" data-target="sensors">
+            <i class="ph ph-waveform text-2xl"></i>
+            <span class="text-[10px] font-semibold">Telemetry</span>
+        </button>
+        <button onclick="switchPage('settings')" class="nav-btn text-slate-400 hover:text-emerald-700 flex flex-col items-center gap-1 w-16 transition" data-target="settings">
+            <i class="ph ph-sliders-horizontal text-2xl"></i>
+            <span class="text-[10px] font-semibold">Settings</span>
+        </button>
+    </nav>
+
+    <!-- Modal Overlay Backdrop -->
+    <div id="sheet-backdrop" class="fixed inset-0 bg-slate-900/50 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-xs" onclick="closeBottomSheet()"></div>
+    
+    <!-- Modal Container -->
+    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-md bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-center p-3 cursor-pointer md:hidden" onclick="closeBottomSheet()">
+            <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
+        </div>
+        <div id="sheet-content" class="p-6 overflow-y-auto no-scrollbar">
+            <!-- Content injected via JS -->
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Mock Data Store ---
+        const nodes = [
+            { 
+                id: 'ESP-N01', zone: 'North Ridge', status: 'Fire', battery: '85%', comms: 'Wi-Fi',
+                sensors: { temp: 68.4, hum: 18, smoke: 850, gas: 120, vibration: 0, acoustic: 45 }
+            },
+            { 
+                id: 'ESP-N02', zone: 'East Boundary', status: 'Logging', battery: '92%', comms: 'LoRa',
+                sensors: { temp: 29.1, hum: 65, smoke: 40, gas: 90, vibration: 12.5, acoustic: 105 }
+            },
+            { 
+                id: 'ESP-N03', zone: 'River Basin', status: 'Toxic Gas', battery: '78%', comms: 'Wi-Fi',
+                sensors: { temp: 26.5, hum: 70, smoke: 450, gas: 450, vibration: 0, acoustic: 30 }
+            },
+            { 
+                id: 'ESP-N04', zone: 'Pine Valley', status: 'Safe', battery: '100%', comms: 'Wi-Fi',
+                sensors: { temp: 27.2, hum: 62, smoke: 25, gas: 80, vibration: 0.1, acoustic: 35 }
+            },
+            { 
+                id: 'ESP-N05', zone: 'West Checkpoint', status: 'Safe', battery: '64%', comms: 'LoRa',
+                sensors: { temp: 28.0, hum: 60, smoke: 30, gas: 85, vibration: 0, acoustic: 40 }
+            }
+        ];
+
+        // --- Navigation Logic ---
+        const pageConfigs = {
+            'home': { title: 'ForestGuard', sub: 'Ranger Dashboard' },
+            'map': { title: 'Node Locations', sub: 'Forest Zoning Map' },
+            'sensors': { title: 'Sensor Telemetry', sub: 'Live Hardware Data' },
+            'settings': { title: 'Configuration', sub: 'System Settings' }
+        };
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            
+            document.getElementById('header-title').innerText = pageConfigs[pageId].title;
+            document.getElementById('header-subtitle').innerText = pageConfigs[pageId].sub;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (btn.dataset.target === pageId) {
+                    btn.classList.add('text-white');
+                    btn.classList.remove('text-emerald-200', 'text-slate-400');
+                    if (icon) icon.classList.replace('ph', 'ph-fill');
+                } else {
+                    btn.classList.remove('text-white');
+                    btn.classList.add('text-emerald-200');
+                    if (icon) icon.classList.replace('ph-fill', 'ph');
+                }
+            });
+
+            if(pageId === 'home') renderHome();
+            if(pageId === 'map') renderMap();
+            if(pageId === 'sensors') renderSensors();
+            closeBottomSheet();
+        }
+
+        const hazardConfig = {
+            'Fire': { color: 'red', icon: 'ph-fire', title: 'Forest Fire Detected' },
+            'Logging': { color: 'amber', icon: 'ph-axe', title: 'Illegal Logging Activity' },
+            'Toxic Gas': { color: 'purple', icon: 'ph-gas-can', title: 'Toxic Gas Accumulation' },
+            'Safe': { color: 'emerald', icon: 'ph-shield-check', title: 'Status Normal' }
+        };
+
+        function renderHome() {
+            const activeAlerts = nodes.filter(n => n.status !== 'Safe');
+            
+            document.getElementById('stat-active-nodes').innerText = nodes.length;
+            document.getElementById('stat-critical-alerts').innerText = activeAlerts.length;
+            
+            document.getElementById('global-alert-badge').style.display = activeAlerts.length > 0 ? 'block' : 'none';
+
+            const container = document.getElementById('alerts-container');
+            container.innerHTML = '';
+
+            if (activeAlerts.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-500 text-sm">All zones are safe. No active hazards.</div>`;
+                return;
+            }
+
+            activeAlerts.forEach(node => {
+                const conf = hazardConfig[node.status];
+                container.innerHTML += `
+                    <div class="bg-white p-4 rounded-2xl shadow-xs border-l-4 border-${conf.color}-500 flex flex-col gap-3 cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-${conf.color}-50 text-${conf.color}-600 rounded-full flex justify-center items-center shrink-0">
+                                <i class="ph-fill ${conf.icon} text-2xl"></i>
+                            </div>
+                            <div class="flex-1">
+                                <h4 class="text-sm font-bold text-slate-800">${conf.title}</h4>
+                                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                                    <i class="ph ph-map-pin"></i> ${node.zone} (${node.id})
+                                </p>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 rounded-lg p-2.5 text-xs font-medium text-slate-600 flex justify-between items-center">
+                            <span>Sensors Breached</span>
+                            <span class="text-${conf.color}-600 font-bold flex items-center gap-1">View Data &rarr;</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderMap() {
+            const container = document.getElementById('nodes-container');
+            container.innerHTML = '';
+
+            nodes.forEach(node => {
+                const conf = hazardConfig[node.status];
+                const bg = node.status === 'Safe' ? 'bg-white' : `bg-${conf.color}-50 border-${conf.color}-200`;
+                
+                container.innerHTML += `
+                    <div class="${bg} p-4 rounded-2xl shadow-xs border border-slate-200 flex items-center justify-between cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="relative">
+                                <div class="w-10 h-10 bg-${conf.color}-100 text-${conf.color}-600 rounded-full flex justify-center items-center">
+                                    <i class="ph-fill ${conf.icon} text-xl"></i>
+                                </div>
+                                ${node.status !== 'Safe' ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-${conf.color}-500 border-2 border-white rounded-full animate-ping"></span>` : ''}
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-slate-800">${node.zone}</h4>
+                                <p class="text-xs text-slate-500 font-medium">${node.id} • ${node.comms}</p>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[11px] uppercase font-bold text-${conf.color}-700 bg-${conf.color}-100 px-2.5 py-1 rounded-md">${node.status}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function renderSensors() {
+            const container = document.getElementById('telemetry-container');
+            container.innerHTML = '';
+
+            nodes.forEach(node => {
+                const s = node.sensors;
+                container.innerHTML += `
+                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
+                        <div class="bg-slate-800 px-4 py-2.5 flex justify-between items-center text-white">
+                            <span class="text-xs font-bold">${node.id} - ${node.zone}</span>
+                            <span class="text-[11px] flex items-center gap-1"><i class="ph ph-battery-full text-emerald-400"></i> ${node.battery}</span>
+                        </div>
+                        <div class="p-4 grid grid-cols-3 gap-y-4 gap-x-2">
+                            <div class="text-center">
+                                <i class="ph ph-thermometer text-rose-500 text-xl mb-1"></i>
+                                <p class="text-[10px] text-slate-400">Temp</p>
+                                <p class="text-xs font-bold text-slate-800">${s.temp}°C</p>
+                            </div>
+                            <div class="text-center">
+                                <i class="ph ph-cloud text-blue-500 text-xl mb-1"></i>
+                                <p class="text-[10px] text-slate-400">Smoke (MQ-2)</p>
+                                <p class="text-xs font-bold text-slate-800">${s.smoke} ppm</p>
+                            </div>
+                            <div class="text-center">
+                                <i class="ph ph-wave-sine text-amber-500 text-xl mb-1"></i>
+                                <p class="text-[10px] text-slate-400">Vibration</p>
+                                <p class="text-xs font-bold text-slate-800">${s.vibration} Hz</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- Bottom Sheet / Modal Logic ---
+        const backdrop = document.getElementById('sheet-backdrop');
+        const sheet = document.getElementById('bottom-sheet');
+        const sheetContent = document.getElementById('sheet-content');
+
+        function openBottomSheet(type, data = null) {
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+
+            if (type === 'systemStatus') {
+                sheetContent.innerHTML = `
+                    <div class="text-center mb-6">
+                        <div class="inline-flex w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full justify-center items-center mb-3">
+                            <i class="ph ph-check-circle text-3xl"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-800">Gateway Active</h3>
+                        <p class="text-sm text-slate-500 mt-1">Connected to central LoRa server.</p>
+                    </div>
+                    <button class="w-full py-3 bg-emerald-800 text-white font-semibold rounded-xl hover:bg-emerald-900 transition" onclick="closeBottomSheet()">Dismiss</button>
+                `;
+            } else if (type === 'node' && data) {
+                const conf = hazardConfig[data.status];
+                const s = data.sensors;
+                
+                sheetContent.innerHTML = `
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-14 h-14 bg-${conf.color}-100 text-${conf.color}-600 rounded-2xl flex justify-center items-center shrink-0">
+                            <i class="ph-fill ${conf.icon} text-3xl"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-bold text-slate-800">${data.zone}</h3>
+                            <p class="text-sm font-medium text-slate-500">Node ID: ${data.id}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-${conf.color}-50 text-${conf.color}-900 p-3 rounded-xl mb-6 text-sm font-semibold border border-${conf.color}-200">
+                        Current Status: ${conf.title}
+                    </div>
+
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Sensor Readings</h4>
+                    <div class="grid grid-cols-2 gap-3 mb-6">
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[10px] text-slate-500 font-medium block">DHT22 Temp</span>
+                            <span class="text-sm font-bold text-slate-800">${s.temp}°C</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[10px] text-slate-500 font-medium block">MQ-2 Smoke</span>
+                            <span class="text-sm font-bold text-slate-800">${s.smoke} ppm</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[10px] text-slate-500 font-medium block">MQ-135 Gas</span>
+                            <span class="text-sm font-bold text-slate-800">${s.gas} ppm</span>
+                        </div>
+                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <span class="text-[10px] text-slate-500 font-medium block">SW-420 Vib.</span>
+                            <span class="text-sm font-bold text-slate-800">${s.vibration} Hz</span>
+                        </div>
+                    </div>
+
+                    ${data.status !== 'Safe' 
+                        ? `<button class="w-full py-3.5 bg-emerald-800 text-white font-semibold rounded-xl hover:bg-emerald-900 transition" onclick="closeBottomSheet()">Dispatch Ranger Patrol</button>`
+                        : `<button class="w-full py-3.5 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition" onclick="closeBottomSheet()">Close</button>`
+                    }
+                `;
+            }
+        }
+
+        function closeBottomSheet() {
+            backdrop.classList.add('pointer-events-none');
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            sheet.classList.add('translate-y-full', 'opacity-0');
+            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        function viewNodeDetails(id) {
+            const node = nodes.find(n => n.id === id);
+            if(node) openBottomSheet('node', node);
+        }
+
+        // Initialize App
+        renderHome();
+    </script>
+</body>
+</html>

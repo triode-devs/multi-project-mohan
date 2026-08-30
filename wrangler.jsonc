@@ -1,0 +1,27 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "multi-projects",
+	"compatibility_date": "2026-08-30",
+	"compatibility_flags": ["nodejs_als"],
+	"main": ".svelte-kit/cloudflare/_worker.js",
+	"assets": {
+		"binding": "ASSETS",
+		"directory": ".svelte-kit/cloudflare"
+	},
+	"workers_dev": true,
+	"preview_urls": true,
+	"routes": [
+		{
+			"pattern": "medicine.zeroes.co.in",
+			"custom_domain": true
+		},
+		{
+			"pattern": "air-quality.zeroes.co.in",
+			"custom_domain": true
+		},
+		{
+			"pattern": "forest.zeroes.co.in",
+			"custom_domain": true
+		}
+	]
+}

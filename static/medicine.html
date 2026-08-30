@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Medicine Cabinet</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <!-- Custom Google Font: Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+
+    <!-- Global Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center shadow-md">
+                    <i class="ph ph-first-aid text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-500 font-medium" id="header-subtitle">Welcome back,</p>
+                    <h1 class="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight" id="header-title">Smart Cabinet</h1>
+                </div>
+            </div>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+                <button onclick="switchPage('home')" class="nav-btn text-teal-600 bg-white shadow-xs px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="home">
+                    <i class="ph-fill ph-house text-lg"></i>
+                    <span>Dashboard</span>
+                </button>
+                <button onclick="switchPage('scan')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="scan">
+                    <i class="ph ph-scan text-lg"></i>
+                    <span>Scan Tag</span>
+                </button>
+                <button onclick="switchPage('stock')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="stock">
+                    <i class="ph ph-package text-lg"></i>
+                    <span>Inventory</span>
+                </button>
+                <button onclick="switchPage('settings')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="settings">
+                    <i class="ph ph-gear text-lg"></i>
+                    <span>Settings</span>
+                </button>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div class="relative">
+                    <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex justify-center items-center cursor-pointer hover:bg-teal-100 transition" onclick="openBottomSheet('notifications')">
+                        <i class="ph ph-bell text-xl"></i>
+                    </div>
+                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 pb-24 md:pb-8">
+        
+        <!-- PAGE: HOME -->
+        <div id="page-home" class="page space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph ph-pill text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800" id="stat-total">0</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Total Items</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-orange-200 transition" onclick="switchPage('stock')">
+                    <div class="w-10 h-10 bg-orange-50 text-orange-500 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph ph-warning-circle text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-3xl font-bold text-slate-800" id="stat-alerts">0</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Action Needed</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                    <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph ph-wifi-high text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-teal-600">Online</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Cabinet ESP32 Hardware</p>
+                    </div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-teal-200 transition" onclick="switchPage('scan')">
+                    <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph ph-scan text-xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-slate-800">Quick Scan</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Simulate RFID / QR Scan</p>
+                    </div>
+                </div>
+            </div>
+
+            <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-bold text-slate-800">Recent Cabinet Alerts</h3>
+                    <span class="text-xs text-teal-600 font-semibold cursor-pointer" onclick="switchPage('stock')">View Inventory &rarr;</span>
+                </div>
+                <div id="home-alerts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+        </div>
+
+        <!-- PAGE: SCAN -->
+        <div id="page-scan" class="page hidden max-w-xl mx-auto bg-white p-8 rounded-3xl shadow-xs border border-slate-200 text-center space-y-6 my-8">
+            <div class="relative w-48 h-48 mx-auto border-4 border-dashed border-teal-400 rounded-3xl flex items-center justify-center bg-teal-50/50">
+                <i class="ph ph-scan text-6xl text-teal-600 animate-pulse"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold text-slate-800">Ready to Scan</h3>
+                <p class="text-sm text-slate-500 mt-2 max-w-xs mx-auto">Place medicine RFID tag near the cabinet sensor or scan QR code.</p>
+            </div>
+            <button onclick="simulateScan()" class="bg-teal-600 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-teal-200 hover:bg-teal-700 active:scale-95 transition-all">
+                Simulate Scan
+            </button>
+        </div>
+
+        <!-- PAGE: STOCK -->
+        <div id="page-stock" class="page hidden space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <div class="relative w-full sm:w-80">
+                    <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                    <input type="text" id="stock-search" oninput="filterStock(this.value)" placeholder="Search inventory..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-teal-500 transition">
+                </div>
+                <button onclick="switchPage('scan')" class="bg-teal-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
+                    <i class="ph ph-plus text-base"></i> Add New Medicine
+                </button>
+            </div>
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden" id="stock-list-container">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- PAGE: SETTINGS -->
+        <div id="page-settings" class="page hidden max-w-2xl mx-auto space-y-6">
+            <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-wifi-high text-2xl text-teal-600"></i>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">ESP32 Cabinet Status</p>
+                            <p class="text-xs text-slate-400">IP: 192.168.1.104</p>
+                        </div>
+                    </div>
+                    <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">Connected</span>
+                </div>
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <i class="ph ph-bell-ringing text-2xl text-teal-600"></i>
+                        <div>
+                            <p class="text-sm font-bold text-slate-800">Push Notifications</p>
+                            <p class="text-xs text-slate-400">Receive alerts for low stock and expiration</p>
+                        </div>
+                    </div>
+                    <div class="w-11 h-6 bg-teal-500 rounded-full relative cursor-pointer">
+                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-xs"></div>
+                    </div>
+                </div>
+            </div>
+            <button class="w-full py-3.5 text-red-600 font-semibold bg-red-50 rounded-xl border border-red-200 hover:bg-red-100 transition">
+                Disconnect Cabinet Hardware
+            </button>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 shadow-lg">
+        <button onclick="switchPage('home')" class="nav-btn text-teal-600 flex flex-col items-center gap-1 w-16" data-target="home">
+            <i class="ph-fill ph-house text-2xl"></i>
+            <span class="text-[10px] font-semibold">Home</span>
+        </button>
+        <button onclick="switchPage('scan')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition" data-target="scan">
+            <i class="ph ph-scan text-2xl"></i>
+            <span class="text-[10px] font-semibold">Scan</span>
+        </button>
+        <button onclick="switchPage('stock')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition" data-target="stock">
+            <i class="ph ph-package text-2xl"></i>
+            <span class="text-[10px] font-semibold">Stock</span>
+        </button>
+        <button onclick="switchPage('settings')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition" data-target="settings">
+            <i class="ph ph-gear text-2xl"></i>
+            <span class="text-[10px] font-semibold">Settings</span>
+        </button>
+    </nav>
+
+    <!-- Modal / Bottom Sheet Backdrop -->
+    <div id="sheet-backdrop" class="fixed inset-0 bg-slate-900/50 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-xs" onclick="closeBottomSheet()"></div>
+    
+    <!-- Modal / Bottom Sheet Container -->
+    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-md bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
+        <div class="flex justify-center p-3 cursor-pointer md:hidden" onclick="closeBottomSheet()">
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
+        </div>
+        <div id="sheet-content" class="p-6 overflow-y-auto no-scrollbar">
+            <!-- Content injected via JS -->
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- Mock Data Store ---
+        const inventory = [
+            { id: 1, name: "Amoxicillin", type: "RFID", count: 14, expiry: "2027-05-10", status: "Fresh" },
+            { id: 2, name: "Vitamin C", type: "QR", count: 30, expiry: "2026-11-20", status: "Fresh" },
+            { id: 3, name: "Paracetamol", type: "RFID", count: 2, expiry: "2027-01-15", status: "Low Stock" },
+            { id: 4, name: "Aspirin 500mg", type: "RFID", count: 10, expiry: "2026-07-12", status: "Expired" },
+            { id: 5, name: "Ibuprofen", type: "QR", count: 24, expiry: "2028-02-22", status: "Fresh" },
+            { id: 6, name: "Cough Syrup", type: "QR", count: 1, expiry: "2026-09-01", status: "Low Stock" }
+        ];
+
+        // --- Navigation Logic ---
+        const pageTitles = {
+            'home': { title: 'Smart Cabinet', sub: 'Welcome back,' },
+            'scan': { title: 'Scan Medicine', sub: 'Add or Verify' },
+            'stock': { title: 'Inventory', sub: 'Manage Cabinet' },
+            'settings': { title: 'Settings', sub: 'Preferences' }
+        };
+
+        function switchPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            // Show target page
+            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            
+            // Update Header
+            document.getElementById('header-title').innerText = pageTitles[pageId].title;
+            document.getElementById('header-subtitle').innerText = pageTitles[pageId].sub;
+
+            // Update Nav Icons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const icon = btn.querySelector('i');
+                if (btn.dataset.target === pageId) {
+                    btn.classList.add('text-teal-600');
+                    btn.classList.remove('text-slate-400', 'text-slate-500');
+                    if (btn.querySelector('.bg-white')) {
+                        btn.classList.add('bg-white', 'shadow-xs');
+                    }
+                    if (icon) icon.classList.replace('ph', 'ph-fill');
+                } else {
+                    btn.classList.remove('text-teal-600', 'bg-white', 'shadow-xs');
+                    btn.classList.add('text-slate-500');
+                    if (icon) icon.classList.replace('ph-fill', 'ph');
+                }
+            });
+
+            if(pageId === 'home') renderHome();
+            if(pageId === 'stock') renderStock();
+            
+            closeBottomSheet();
+        }
+
+        // --- Render Functions ---
+        function renderHome() {
+            const totalItems = inventory.reduce((sum, item) => sum + item.count, 0);
+            const alerts = inventory.filter(i => i.status === 'Expired' || i.status === 'Low Stock');
+            
+            document.getElementById('stat-total').innerText = totalItems;
+            document.getElementById('stat-alerts').innerText = alerts.length;
+
+            const alertsContainer = document.getElementById('home-alerts-container');
+            alertsContainer.innerHTML = '';
+
+            alerts.forEach(item => {
+                const isExpired = item.status === 'Expired';
+                const color = isExpired ? 'red' : 'amber';
+                const icon = isExpired ? 'ph-x-circle' : 'ph-warning-circle';
+                const desc = isExpired ? `Expired on ${item.expiry}` : `Low Stock: ${item.count} unit(s) left`;
+                
+                alertsContainer.innerHTML += `
+                    <div class="bg-${color}-50 p-4 rounded-2xl border border-${color}-100 flex items-center gap-4 cursor-pointer hover:shadow-xs transition" onclick="viewMedicineDetails(${item.id})">
+                        <div class="w-10 h-10 bg-${color}-100 text-${color}-600 rounded-full flex justify-center items-center shrink-0">
+                            <i class="ph ${icon} text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-bold text-slate-800">${item.name}</h4>
+                            <p class="text-xs text-slate-500 mt-0.5">${desc}</p>
+                        </div>
+                        <i class="ph ph-caret-right text-slate-400"></i>
+                    </div>
+                `;
+            });
+        }
+
+        function renderStock(query = '') {
+            const container = document.getElementById('stock-list-container');
+            container.innerHTML = '';
+
+            const filtered = inventory.filter(i => i.name.toLowerCase().includes(query.toLowerCase()));
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">No items found matching "${query}"</div>`;
+                return;
+            }
+
+            filtered.forEach((item, index) => {
+                const isLast = index === filtered.length - 1;
+                const border = isLast ? '' : 'border-b border-slate-100';
+                
+                let statusBadge = 'bg-teal-50 text-teal-700';
+                if(item.status === 'Expired') statusBadge = 'bg-red-50 text-red-700';
+                if(item.status === 'Low Stock') statusBadge = 'bg-amber-50 text-amber-700';
+
+                container.innerHTML += `
+                    <div class="p-4 ${border} flex items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors" onclick="viewMedicineDetails(${item.id})">
+                        <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex justify-center items-center">
+                            <i class="ph ph-pill text-xl"></i>
+                        </div>
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-slate-800">${item.name}</h4>
+                            <p class="text-[11px] text-slate-400 mt-0.5 uppercase tracking-wider">${item.type} Tag</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-slate-800">${item.count} Unit(s)</p>
+                            <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md mt-0.5 ${statusBadge}">${item.status}</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function filterStock(query) {
+            renderStock(query);
+        }
+
+        // --- Bottom Sheet / Modal Logic ---
+        const backdrop = document.getElementById('sheet-backdrop');
+        const sheet = document.getElementById('bottom-sheet');
+        const sheetContent = document.getElementById('sheet-content');
+
+        function openBottomSheet(type, data = null) {
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+
+            if (type === 'notifications') {
+                sheetContent.innerHTML = `
+                    <h3 class="text-xl font-bold text-slate-800 mb-2">Notifications</h3>
+                    <p class="text-sm text-slate-500 mb-4">System alerts from ESP32</p>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm">Cabinet door was left open at 10:42 AM.</div>
+                `;
+            } else if (type === 'medicine' && data) {
+                sheetContent.innerHTML = `
+                    <div class="flex justify-center mb-4">
+                        <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex justify-center items-center">
+                            <i class="ph ph-pill text-3xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 text-center mb-1">${data.name}</h3>
+                    <p class="text-center text-sm font-medium text-slate-500 mb-6">Status: <span class="text-teal-600">${data.status}</span></p>
+                    
+                    <div class="space-y-3 mb-6">
+                        <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                            <span class="text-sm text-slate-500">Inventory Count</span>
+                            <span class="text-sm font-bold text-slate-800">${data.count} Units</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                            <span class="text-sm text-slate-500">Expiry Date</span>
+                            <span class="text-sm font-bold text-slate-800">${data.expiry}</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                            <span class="text-sm text-slate-500">Tag Type</span>
+                            <span class="text-sm font-bold text-slate-800">${data.type}</span>
+                        </div>
+                    </div>
+                    <button class="w-full py-3 bg-teal-600 text-white font-semibold rounded-xl shadow-md hover:bg-teal-700 transition" onclick="closeBottomSheet()">Done</button>
+                `;
+            } else if (type === 'scanResult') {
+                sheetContent.innerHTML = `
+                    <div class="flex justify-center mb-4">
+                        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex justify-center items-center">
+                            <i class="ph ph-check-circle text-3xl"></i>
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800 text-center mb-2">Item Scanned!</h3>
+                    <p class="text-center text-sm text-slate-500 mb-6">Lisinopril 10mg added to inventory.</p>
+                    <button class="w-full py-3 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition" onclick="closeBottomSheet()">View in Stock</button>
+                `;
+            }
+        }
+
+        function closeBottomSheet() {
+            backdrop.classList.add('pointer-events-none');
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            sheet.classList.add('translate-y-full', 'opacity-0');
+            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        function viewMedicineDetails(id) {
+            const item = inventory.find(i => i.id === id);
+            if(item) openBottomSheet('medicine', item);
+        }
+
+        function simulateScan() {
+            setTimeout(() => {
+                openBottomSheet('scanResult');
+            }, 500);
+        }
+
+        // Initialize App
+        renderHome();
+    </script>
+</body>
+</html>
