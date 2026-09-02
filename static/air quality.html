@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Campus Air Monitor</title>
+    <title>Campus Air Quality Monitor</title>
     <!-- Tailwind CSS v4 CDN -->
     <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-    <!-- Custom Google Font: Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Google Font: Outfit -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
+    <!-- Chart.js CDN for Air Quality & CO2 Trends -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         body {
-            font-family: 'Poppins', sans-serif;
+            font-family: 'Outfit', sans-serif;
             background-color: #f8fafc;
         }
         .no-scrollbar::-webkit-scrollbar {
@@ -23,40 +25,32 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        .bg-grid-pattern {
-            background-image: linear-gradient(to right, #e0e7ff 1px, transparent 1px), linear-gradient(to bottom, #e0e7ff 1px, transparent 1px);
-            background-size: 24px 24px;
-        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800 antialiased">
 
-    <!-- Global Header -->
-    <header class="bg-indigo-600 text-white sticky top-0 z-30 shadow-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center relative overflow-hidden">
-            <!-- Decorative background elements -->
-            <div class="absolute -right-6 -top-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
-            <div class="absolute -left-6 top-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
-
-            <div class="flex items-center gap-3 relative z-10">
-                <div class="w-10 h-10 bg-white/20 backdrop-blur-xs text-white rounded-xl flex items-center justify-center shadow-xs">
-                    <i class="ph ph-wind text-2xl"></i>
+    <!-- Global Fixed Top Header -->
+    <header class="bg-indigo-900 text-white fixed top-0 left-0 right-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600/80 backdrop-blur-md rounded-xl flex items-center justify-center border border-indigo-400/30 shadow-inner">
+                    <i class="ph-fill ph-wind text-2xl text-sky-300"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-indigo-200 font-medium tracking-wider uppercase" id="header-subtitle">Facilities Team</p>
-                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight" id="header-title">Campus Air</h1>
+                    <p class="text-xs text-indigo-200 font-medium" id="header-subtitle">Monitored Place</p>
+                    <h1 class="text-xl sm:text-2xl font-bold tracking-tight" id="header-title">Air Quality Monitor</h1>
                 </div>
             </div>
 
             <!-- Desktop Nav Links -->
-            <nav class="hidden md:flex items-center gap-2 bg-indigo-900/40 p-1.5 rounded-2xl border border-indigo-400/30 relative z-10 backdrop-blur-xs">
-                <button onclick="switchPage('home')" class="nav-btn text-white bg-indigo-700/80 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-xs" data-target="home">
+            <nav class="hidden md:flex items-center gap-2 bg-indigo-950/60 p-1.5 rounded-2xl border border-indigo-700/50">
+                <button onclick="switchPage('home')" class="nav-btn text-white bg-indigo-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all shadow-xs" data-target="home">
                     <i class="ph-fill ph-house text-lg"></i>
                     <span>Dashboard</span>
                 </button>
                 <button onclick="switchPage('map')" class="nav-btn text-indigo-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="map">
-                    <i class="ph ph-map-pin-line text-lg"></i>
-                    <span>Campus Zones</span>
+                    <i class="ph ph-map-pin text-lg"></i>
+                    <span>Locations</span>
                 </button>
                 <button onclick="switchPage('analytics')" class="nav-btn text-indigo-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="analytics">
                     <i class="ph ph-chart-line-up text-lg"></i>
@@ -64,191 +58,223 @@
                 </button>
             </nav>
 
-            <div class="flex items-center gap-3 relative z-10">
-                <div class="relative">
-                    <div class="w-10 h-10 bg-white/20 backdrop-blur-xs text-white rounded-xl flex justify-center items-center cursor-pointer hover:bg-white/30 transition" onclick="openBottomSheet('alerts')">
-                        <i class="ph ph-wind text-xl"></i>
-                    </div>
-                    <span class="absolute top-0 right-0 w-3 h-3 bg-rose-500 border-2 border-indigo-600 rounded-full" id="global-alert-badge"></span>
-                </div>
+            <div class="flex items-center gap-3">
+                <button onclick="openAddPlaceModal()" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                    <i class="ph ph-plus-circle text-base"></i>
+                    <span>Add Place</span>
+                </button>
+                <button onclick="fetchAirQualityFromApi()" title="Sync with Firebase API" class="px-3 py-2 bg-indigo-800 text-indigo-100 hover:bg-indigo-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 border border-indigo-600/50 cursor-pointer">
+                    <i class="ph ph-arrows-counter-clockwise text-base" id="aq-sync-icon"></i>
+                    <span class="hidden sm:inline">Sync API</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 pb-24 md:pb-8">
+    <!-- Main Container (Padded for Fixed Header) -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-24 pb-24 md:pt-28 md:pb-8 flex-1">
         
         <!-- PAGE: DASHBOARD -->
         <div id="page-home" class="page space-y-6">
             
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Place Selector Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <div class="flex items-center gap-3">
+                    <i class="ph ph-map-pin text-2xl text-indigo-600"></i>
+                    <div>
+                        <p class="text-xs text-slate-400 font-medium">Select Active Monitored Place</p>
+                        <h3 class="text-lg font-bold text-slate-800" id="active-place-name">Seminar Hall-1 (NODE-01)</h3>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <select id="place-selector" onchange="selectPlaceNode(this.value)" class="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-semibold text-slate-700 focus:outline-none focus:border-indigo-500 w-full sm:w-60">
+                        <option value="NODE-01">Seminar Hall-1 (NODE-01)</option>
+                    </select>
+                    <button onclick="openAddPlaceModal()" class="px-3 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-semibold rounded-xl transition cursor-pointer shrink-0">
+                        + Config Place
+                    </button>
+                </div>
+            </div>
+
+            <!-- Key Sensor Cards (AQI & CO2 Emission Only) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
                 <!-- Main AQI Gauge Card -->
                 <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col items-center justify-center text-center relative overflow-hidden">
-                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 to-indigo-500"></div>
-                    <h3 class="text-sm font-semibold text-slate-500 mb-4">Campus Average AQI</h3>
+                    <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-400 via-indigo-500 to-emerald-500"></div>
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Calculated Air Quality</span>
                     
-                    <div class="relative w-36 h-36 flex justify-center items-center my-2">
-                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                            <path class="text-slate-100" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3"></path>
-                            <path class="text-indigo-500" stroke-dasharray="65, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"></path>
-                        </svg>
-                        <div class="absolute flex flex-col items-center">
-                            <span class="text-4xl font-bold text-slate-800">65</span>
-                            <span class="text-[11px] font-bold text-indigo-600 uppercase tracking-widest mt-0.5">Moderate</span>
+                    <div class="relative flex items-center justify-center my-4">
+                        <div class="w-36 h-36 rounded-full border-8 border-emerald-100 flex flex-col items-center justify-center bg-emerald-50/50">
+                            <span class="text-4xl font-extrabold text-slate-800" id="dash-aqi">0</span>
+                            <span class="text-[10px] font-bold text-emerald-600 tracking-widest uppercase" id="dash-status-badge">Safe AQI</span>
                         </div>
                     </div>
-                    <p class="text-xs text-slate-400 mt-2">Overall AQI calculated across all 5 active campus sensors</p>
+                    
+                    <p class="text-xs text-slate-500">ESP Node: <strong id="dash-node-id">NODE-01</strong> • <span id="dash-place-sub">Seminar Hall-1</span></p>
                 </div>
 
-                <!-- Stats Grid -->
-                <div class="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
-                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-indigo-200 transition" onclick="switchPage('map')">
-                        <div class="w-10 h-10 bg-sky-50 text-sky-600 rounded-xl flex justify-center items-center mb-4">
-                            <i class="ph-fill ph-buildings text-xl"></i>
-                        </div>
+                <!-- CO2 Emission Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-indigo-300 transition" onclick="openNodeConfigModal()">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-800" id="stat-nodes">5</h2>
-                            <p class="text-xs text-slate-500 font-medium mt-1">Monitored Campus Zones</p>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">CO₂ Emission</span>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mt-2"><span id="dash-co2">0</span> <span class="text-sm font-normal text-slate-400">ppm</span></h3>
+                        </div>
+                        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-cloud text-2xl"></i>
                         </div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
-                        <div class="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex justify-center items-center mb-4">
-                            <i class="ph-fill ph-fan text-xl animate-[spin_3s_linear_infinite]"></i>
-                        </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-xs text-slate-500">Normal range: &lt; 1000 ppm</span>
+                        <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Live Telemetry</span>
+                    </div>
+                </div>
+
+                <!-- Fan Relay Status Card -->
+                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-sky-300 transition" onclick="openNodeConfigModal()">
+                    <div class="flex justify-between items-start">
                         <div>
-                            <h2 class="text-3xl font-bold text-slate-800" id="stat-fans">2</h2>
-                            <p class="text-xs text-slate-500 font-medium mt-1">Exhaust Fans Automatically ON</p>
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Cooling / Exhaust Fan</span>
+                            <h3 class="text-3xl font-extrabold text-slate-800 mt-2" id="dash-fan">OFF</h3>
+                        </div>
+                        <div class="w-12 h-12 bg-sky-50 text-sky-600 rounded-xl flex items-center justify-center">
+                            <i class="ph-fill ph-fan text-2xl"></i>
                         </div>
                     </div>
-                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between sm:col-span-2">
-                        <div class="flex justify-between items-center">
-                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex justify-center items-center">
-                                <i class="ph ph-thermometer text-xl"></i>
-                            </div>
-                            <span class="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">Normal Range</span>
-                        </div>
-                        <div class="mt-4 flex justify-between items-end">
-                            <div>
-                                <h3 class="text-xl font-bold text-slate-800">24.5°C / 52% RH</h3>
-                                <p class="text-xs text-slate-500 font-medium mt-1">Campus Ambient Environment</p>
-                            </div>
-                            <span class="text-xs text-indigo-600 font-semibold cursor-pointer" onclick="switchPage('analytics')">View Charts &rarr;</span>
-                        </div>
+                    <div class="mt-4 pt-4 border-t border-slate-100 flex justify-between items-center">
+                        <span class="text-xs text-slate-500">ESP Relay Command</span>
+                        <span class="text-xs font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">Auto Relay</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Priority Alerts -->
+            <!-- Single Location Overview -->
+            <section class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800" id="card-location-title">Seminar Hall-1</h3>
+                        <p class="text-xs text-slate-500">Configured ESP32 Node: <span id="card-node-id" class="font-mono font-bold text-indigo-700">NODE-01</span></p>
+                    </div>
+                    <button onclick="openNodeConfigModal()" class="px-4 py-2 bg-indigo-600 text-white rounded-xl text-xs font-semibold hover:bg-indigo-700 transition cursor-pointer">
+                        Configure Node & Relay
+                    </button>
+                </div>
+                <div class="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-xs font-bold text-slate-400">Configured ESP ID</span>
+                        <p class="text-base font-mono font-bold text-indigo-700 mt-1" id="loc-node-id">NODE-01</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-xs font-bold text-slate-400">Environment Type</span>
+                        <p class="text-base font-bold text-slate-800 mt-1" id="loc-type">Indoor Auditorium</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-xs font-bold text-slate-400">Current CO₂ Emission</span>
+                        <p class="text-base font-bold text-slate-800 mt-1" id="loc-co2">0 ppm</p>
+                    </div>
+                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-100">
+                        <span class="text-xs font-bold text-slate-400">Calculated Air Quality</span>
+                        <p class="text-base font-bold text-emerald-600 mt-1" id="loc-aqi">AQI 0</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Dashboard Real-Time Air Quality & CO2 Graph Section -->
             <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Unsafe Emission Alerts</h3>
-                    <span class="text-xs font-semibold text-indigo-600 cursor-pointer" onclick="switchPage('map')">View All Zones</span>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Real-Time Air Quality & CO₂ Emission Trends</h3>
+                        <p class="text-xs text-slate-400">Live telemetry trends for CO₂ PPM and Calculated Air Quality Index (AQI)</p>
+                    </div>
+                    <button onclick="switchPage('analytics')" class="text-xs text-indigo-600 font-semibold cursor-pointer hover:underline">
+                        View Detailed Analytics &rarr;
+                    </button>
                 </div>
-                <div id="dashboard-alerts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Populated by JS -->
+                <div class="h-64 relative bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <canvas id="homeAirQualityChart"></canvas>
+                </div>
+            </section>
+
+            <!-- Event & System Logs stored in Firebase -->
+            <section class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Firebase Telemetry & Hardware Logs</h3>
+                        <p class="text-xs text-slate-400">Stored at /air-quality/logs</p>
+                    </div>
+                    <button onclick="fetchAirQualityFromApi()" class="text-xs text-indigo-600 font-semibold cursor-pointer hover:underline">
+                        Sync Firebase Logs &rarr;
+                    </button>
+                </div>
+                <div id="logs-container" class="divide-y divide-slate-100 text-xs">
+                    <!-- Populated via JS -->
                 </div>
             </section>
         </div>
 
-        <!-- PAGE: MAP / ZONES -->
+        <!-- PAGE: MAP / LOCATIONS -->
         <div id="page-map" class="page hidden space-y-6">
-            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-3">
-                <i class="ph ph-magnifying-glass text-indigo-400 text-lg"></i>
-                <input type="text" id="zone-search" oninput="filterZones(this.value)" placeholder="Search campus zones..." class="bg-transparent border-none outline-none text-sm w-full text-slate-700">
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="nodes-container">
-                <!-- Populated by JS -->
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Configured Places & ESP Nodes</h3>
+                        <p class="text-xs text-slate-500">Places stored in Firebase /air-quality/nodes</p>
+                    </div>
+                    <button onclick="openAddPlaceModal()" class="px-4 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-xl hover:bg-indigo-700 transition cursor-pointer">
+                        + Add New Place
+                    </button>
+                </div>
+                <div id="places-grid-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated via JS -->
+                </div>
             </div>
         </div>
 
         <!-- PAGE: ANALYTICS -->
         <div id="page-analytics" class="page hidden space-y-6">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
-                    <div class="flex justify-between items-center mb-6">
-                        <div>
-                            <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Campus Carbon Footprint</h3>
-                            <p class="text-xl font-bold text-slate-800 mt-1">Daily CO₂ Emission Trends</p>
-                        </div>
-                        <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
-                            <i class="ph ph-trend-down text-2xl"></i>
-                        </div>
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">CO₂ Emission & AQI Telemetry Trends</h3>
+                        <p class="text-xs text-slate-500">Historical trend lines persisted in LocalStorage.</p>
                     </div>
-                    
-                    <!-- CSS Bar Chart -->
-                    <div class="flex items-end justify-between h-48 gap-3 mt-6 pt-4 border-b border-slate-100">
-                        <div class="w-full bg-sky-100 hover:bg-sky-200 rounded-t-lg h-[40%] relative group cursor-pointer transition">
-                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">410 ppm</span>
-                        </div>
-                        <div class="w-full bg-sky-100 hover:bg-sky-200 rounded-t-lg h-[55%] relative group cursor-pointer transition">
-                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">520 ppm</span>
-                        </div>
-                        <div class="w-full bg-sky-100 hover:bg-sky-200 rounded-t-lg h-[30%] relative group cursor-pointer transition">
-                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-slate-600 opacity-0 group-hover:opacity-100 transition">380 ppm</span>
-                        </div>
-                        <div class="w-full bg-indigo-500 hover:bg-indigo-600 rounded-t-lg h-[85%] relative group cursor-pointer transition shadow-[0_0_15px_rgba(99,102,241,0.3)]">
-                            <span class="absolute -top-7 left-1/2 -translate-x-1/2 text-xs font-bold text-indigo-600 opacity-100 transition">850 ppm</span>
-                        </div>
-                        <div class="w-full bg-slate-100 rounded-t-lg h-[20%]"></div>
-                        <div class="w-full bg-slate-100 rounded-t-lg h-[20%]"></div>
+                    <button onclick="clearAirQualityAnalyticsHistory()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition cursor-pointer">
+                        Clear Chart History
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div class="p-5 bg-indigo-50/70 rounded-2xl border border-indigo-100">
+                        <span class="text-xs font-bold text-indigo-600 uppercase">Live CO₂ Reading</span>
+                        <h4 class="text-3xl font-extrabold text-indigo-900 mt-1" id="analytics-co2">0 ppm</h4>
+                        <p class="text-xs text-indigo-700 mt-2">Optimal indoor target &lt; 1000 ppm.</p>
                     </div>
-                    <div class="flex justify-between mt-3 text-xs font-semibold text-slate-400 uppercase">
-                        <span>Mon</span><span>Tue</span><span>Wed</span><span class="text-indigo-600">Thu (Today)</span><span>Fri</span><span>Sat</span>
+                    <div class="p-5 bg-emerald-50/70 rounded-2xl border border-emerald-100">
+                        <span class="text-xs font-bold text-emerald-600 uppercase">Calculated AQI Score</span>
+                        <h4 class="text-3xl font-extrabold text-emerald-900 mt-1" id="analytics-aqi">0</h4>
+                        <p class="text-xs text-emerald-700 mt-2">Safe environment status.</p>
                     </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
-                    <div>
-                        <h3 class="text-base font-bold text-slate-800 mb-4">Highest Pollutants Today</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <div class="flex justify-between text-xs mb-1.5 font-medium">
-                                    <span class="text-slate-600">PM2.5 (Particulate)</span>
-                                    <span class="text-rose-600 font-bold">120 µg/m³</span>
-                                </div>
-                                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-rose-500 w-[75%] rounded-full"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-xs mb-1.5 font-medium">
-                                    <span class="text-slate-600">NO₂ (Nitrogen Dioxide)</span>
-                                    <span class="text-amber-600 font-bold">45 ppb</span>
-                                </div>
-                                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-amber-400 w-[45%] rounded-full"></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="flex justify-between text-xs mb-1.5 font-medium">
-                                    <span class="text-slate-600">CO₂ (Carbon Dioxide)</span>
-                                    <span class="text-indigo-600 font-bold">850 ppm</span>
-                                </div>
-                                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                                    <div class="h-full bg-indigo-500 w-[60%] rounded-full"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="w-full mt-6 py-3 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition">
-                        Export Environmental Report
-                    </button>
+                <div class="h-72 relative bg-slate-50/50 p-4 rounded-2xl border border-slate-100">
+                    <canvas id="airQualityChart"></canvas>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- Mobile Bottom Navigation Bar -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 shadow-lg">
-        <button onclick="switchPage('home')" class="nav-btn text-indigo-600 flex flex-col items-center gap-1 w-16" data-target="home">
+    <!-- Global Fixed Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-indigo-900 border-t border-indigo-800 px-6 py-3 flex justify-between items-center z-40 shadow-lg text-white">
+        <button onclick="switchPage('home')" class="nav-btn text-white flex flex-col items-center gap-1 w-16 cursor-pointer" data-target="home">
             <i class="ph-fill ph-house text-2xl"></i>
             <span class="text-[10px] font-semibold">Home</span>
         </button>
-        <button onclick="switchPage('map')" class="nav-btn text-slate-400 hover:text-indigo-600 flex flex-col items-center gap-1 w-16 transition" data-target="map">
-            <i class="ph ph-map-pin-line text-2xl"></i>
-            <span class="text-[10px] font-semibold">Zones</span>
+        <button onclick="switchPage('map')" class="nav-btn text-indigo-300 hover:text-white flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="map">
+            <i class="ph ph-map-pin text-2xl"></i>
+            <span class="text-[10px] font-semibold">Locations</span>
         </button>
-        <button onclick="switchPage('analytics')" class="nav-btn text-slate-400 hover:text-indigo-600 flex flex-col items-center gap-1 w-16 transition" data-target="analytics">
+        <button onclick="switchPage('analytics')" class="nav-btn text-indigo-300 hover:text-white flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="analytics">
             <i class="ph ph-chart-line-up text-2xl"></i>
             <span class="text-[10px] font-semibold">Analytics</span>
         </button>
@@ -258,7 +284,7 @@
     <div id="sheet-backdrop" class="fixed inset-0 bg-slate-900/50 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-xs" onclick="closeBottomSheet()"></div>
     
     <!-- Modal Container -->
-    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-md bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
+    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-lg bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
         <div class="flex justify-center p-3 cursor-pointer md:hidden" onclick="closeBottomSheet()">
             <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
         </div>
@@ -269,49 +295,186 @@
 
     <!-- Application Logic -->
     <script>
-        // --- Mock Data Store ---
-        const campusNodes = [
-            { 
-                id: 'NODE-01', location: 'Chemistry Lab', type: 'Indoor', aqi: 45, co2: 850, 
-                pm25: 12, co: 1.2, no2: 15, status: 'Good', fanStatus: 'OFF'
-            },
-            { 
-                id: 'NODE-02', location: 'Main Gate Parking', type: 'Outdoor', aqi: 135, co2: 450, 
-                pm25: 85, co: 5.4, no2: 60, status: 'Poor', fanStatus: 'ON'
-            },
-            { 
-                id: 'NODE-03', location: 'Block B Rooftop', type: 'Outdoor', aqi: 30, co2: 410, 
-                pm25: 8, co: 0.5, no2: 10, status: 'Good', fanStatus: 'OFF'
-            },
-            { 
-                id: 'NODE-04', location: 'Student Cafeteria', type: 'Indoor', aqi: 110, co2: 1250, 
-                pm25: 45, co: 2.1, no2: 25, status: 'Poor', fanStatus: 'ON'
-            },
-            { 
-                id: 'NODE-05', location: 'Library Ground Floor', type: 'Indoor', aqi: 40, co2: 550, 
-                pm25: 10, co: 0.8, no2: 12, status: 'Good', fanStatus: 'OFF'
-            }
-        ];
-
-        // --- Navigation Logic ---
-        const pageConfigs = {
-            'home': { title: 'Campus Air', sub: 'Facilities Team' },
-            'map': { title: 'Campus Zones', sub: 'Node Locations' },
-            'analytics': { title: 'Analytics', sub: 'Emission Tracking' }
+        let nodesList = [];
+        let selectedNodeId = 'NODE-01';
+        let nodeData = {
+            id: 'NODE-01',
+            nodeId: 'NODE-01',
+            location: 'Seminar Hall-1',
+            type: 'Indoor Auditorium',
+            aqi: 0,
+            co2: 0,
+            status: 'Offline',
+            fanStatus: 'OFF'
         };
 
-        function switchPage(pageId) {
-            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
-            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+        let logs = [];
+        let airQualityChartInstance = null;
+        let homeAirQualityChartInstance = null;
+
+        // --- LocalStorage Analytics History ---
+        function getAirQualityAnalyticsHistory() {
+            try {
+                const saved = localStorage.getItem('air_quality_analytics_history');
+                if (saved) return JSON.parse(saved);
+            } catch(e) {}
             
-            document.getElementById('header-title').innerText = pageConfigs[pageId].title;
-            document.getElementById('header-subtitle').innerText = pageConfigs[pageId].sub;
+            const seed = [];
+            const now = Date.now();
+            for (let i = 10; i >= 0; i--) {
+                const t = new Date(now - i * 60000);
+                seed.push({
+                    time: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    co2: Math.floor(450 + Math.random() * 350),
+                    aqi: Math.floor(25 + Math.random() * 35)
+                });
+            }
+            localStorage.setItem('air_quality_analytics_history', JSON.stringify(seed));
+            return seed;
+        }
+
+        function recordAirQualityPoint(point) {
+            const history = getAirQualityAnalyticsHistory();
+            history.push(point);
+            if (history.length > 15) history.shift();
+            localStorage.setItem('air_quality_analytics_history', JSON.stringify(history));
+            initOrUpdateAirQualityCharts();
+        }
+
+        function clearAirQualityAnalyticsHistory() {
+            localStorage.removeItem('air_quality_analytics_history');
+            initOrUpdateAirQualityCharts();
+        }
+
+        function createOrUpdateAqChart(canvasId, instanceRef, chartConfig) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return null;
+            if (instanceRef) instanceRef.destroy();
+            return new Chart(ctx, chartConfig);
+        }
+
+        function initOrUpdateAirQualityCharts() {
+            const history = getAirQualityAnalyticsHistory();
+            const labels = history.map(h => h.time);
+            const co2Data = history.map(h => h.co2);
+            const aqiData = history.map(h => h.aqi);
+
+            const aqChartConfig = {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'CO₂ Emission (PPM)',
+                            data: co2Data,
+                            borderColor: '#4f46e5',
+                            backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                            tension: 0.3,
+                            fill: true,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Calculated AQI Score',
+                            data: aqiData,
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderDash: [4, 4],
+                            tension: 0.3,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: { display: true, text: 'CO₂ (PPM)' }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
+                            title: { display: true, text: 'AQI Score' }
+                        }
+                    }
+                }
+            };
+
+            airQualityChartInstance = createOrUpdateAqChart('airQualityChart', airQualityChartInstance, aqChartConfig);
+            homeAirQualityChartInstance = createOrUpdateAqChart('homeAirQualityChart', homeAirQualityChartInstance, aqChartConfig);
+        }
+
+        const pageConfigs = {
+            'home': { title: 'Air Quality Monitor', sub: 'Campus Sensor Grid' },
+            'map': { title: 'Monitored Places', sub: 'Firebase Node Map' },
+            'analytics': { title: 'CO₂ Analytics', sub: 'Historical Trends' }
+        };
+
+        // Modal Helpers
+        function getModalDom() {
+            return {
+                backdrop: document.getElementById('sheet-backdrop'),
+                sheet: document.getElementById('bottom-sheet'),
+                sheetContent: document.getElementById('sheet-content')
+            };
+        }
+
+        function openModalHtml(htmlContent) {
+            const { backdrop, sheet, sheetContent } = getModalDom();
+            if (!backdrop || !sheet || !sheetContent) return;
+
+            sheetContent.innerHTML = htmlContent;
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        function closeBottomSheet() {
+            const { backdrop, sheet } = getModalDom();
+            if (!backdrop || !sheet) return;
+
+            backdrop.classList.add('pointer-events-none');
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            sheet.classList.add('translate-y-full', 'opacity-0');
+            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        // URL Routing
+        function getPageFromUrl() {
+            const hash = window.location.hash.replace('#', '').trim().toLowerCase();
+            if (hash && pageConfigs[hash]) return hash;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const paramPage = urlParams.get('page')?.trim().toLowerCase();
+            if (paramPage && pageConfigs[paramPage]) return paramPage;
+
+            return 'home';
+        }
+
+        function switchPage(pageId, updateUrl = true) {
+            if (!pageConfigs[pageId]) pageId = 'home';
+
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) targetPage.classList.remove('hidden');
+            
+            if (pageConfigs[pageId]) {
+                document.getElementById('header-title').innerText = pageConfigs[pageId].title;
+                document.getElementById('header-subtitle').innerText = pageConfigs[pageId].sub;
+            }
 
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const icon = btn.querySelector('i');
                 if (btn.dataset.target === pageId) {
                     btn.classList.add('text-white');
-                    btn.classList.remove('text-indigo-200', 'text-slate-400');
+                    btn.classList.remove('text-indigo-200', 'text-indigo-300');
                     if (icon) icon.classList.replace('ph', 'ph-fill');
                 } else {
                     btn.classList.remove('text-white');
@@ -320,197 +483,272 @@
                 }
             });
 
+            if (updateUrl && window.location.hash !== `#${pageId}`) {
+                history.pushState(null, '', `#${pageId}`);
+            }
+
             if(pageId === 'home') renderHome();
-            if(pageId === 'map') renderMap();
+            if(pageId === 'map') renderPlacesMap();
             closeBottomSheet();
         }
 
-        const statusConfig = {
-            'Good': { color: 'sky', icon: 'ph-check-circle', text: 'Air Quality Good' },
-            'Moderate': { color: 'amber', icon: 'ph-warning', text: 'Air Quality Moderate' },
-            'Poor': { color: 'rose', icon: 'ph-warning-octagon', text: 'Unsafe Emission Levels' }
-        };
+        window.addEventListener('hashchange', () => {
+            switchPage(getPageFromUrl(), false);
+        });
+        window.addEventListener('popstate', () => {
+            switchPage(getPageFromUrl(), false);
+        });
+
+        // --- Live API Fetch from Firebase ---
+        async function fetchAirQualityFromApi() {
+            const syncIcon = document.getElementById('aq-sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+
+            try {
+                const res = await fetch('/api/air-quality');
+                const data = await res.json();
+                if (data.success) {
+                    if (Array.isArray(data.nodes)) nodesList = data.nodes;
+                    if (data.node) {
+                        nodeData = data.node;
+                        selectedNodeId = nodeData.nodeId || nodeData.id || 'NODE-01';
+                        if (nodeData.co2 !== undefined || nodeData.aqi !== undefined) {
+                            recordAirQualityPoint({
+                                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                                co2: Number(nodeData.co2) || 450,
+                                aqi: Number(nodeData.aqi) || 35
+                            });
+                        }
+                    }
+                    if (Array.isArray(data.logs)) logs = data.logs;
+                    updatePlaceSelectorDropdown();
+                }
+            } catch (err) {
+                console.error('Failed to fetch air quality telemetry from API:', err);
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin');
+                renderHome();
+                renderLogs();
+                renderPlacesMap();
+            }
+        }
+
+        function updatePlaceSelectorDropdown() {
+            const selector = document.getElementById('place-selector');
+            if (!selector) return;
+            
+            if (nodesList.length === 0) {
+                selector.innerHTML = `<option value="NODE-01">Seminar Hall-1 (NODE-01)</option>`;
+                return;
+            }
+
+            selector.innerHTML = nodesList.map(n => `
+                <option value="${n.nodeId || n.id}" ${(n.nodeId || n.id) === selectedNodeId ? 'selected' : ''}>
+                    ${n.location || 'Place'} (${n.nodeId || n.id})
+                </option>
+            `).join('');
+        }
+
+        function selectPlaceNode(nodeId) {
+            selectedNodeId = nodeId;
+            fetchAirQualityFromApi();
+        }
 
         function renderHome() {
-            const activeFans = campusNodes.filter(n => n.fanStatus === 'ON');
-            const poorNodes = campusNodes.filter(n => n.status === 'Poor');
-            
-            document.getElementById('stat-nodes').innerText = campusNodes.length;
-            document.getElementById('stat-fans').innerText = activeFans.length;
-            
-            document.getElementById('global-alert-badge').style.display = poorNodes.length > 0 ? 'block' : 'none';
+            document.getElementById('dash-aqi').innerText = nodeData.aqi || 0;
+            document.getElementById('dash-co2').innerText = nodeData.co2 || 0;
+            document.getElementById('dash-fan').innerText = nodeData.fanStatus || 'OFF';
+            document.getElementById('dash-node-id').innerText = nodeData.nodeId || selectedNodeId;
+            document.getElementById('dash-place-sub').innerText = nodeData.location || 'Monitored Place';
+            document.getElementById('active-place-name').innerText = `${nodeData.location || 'Place'} (${nodeData.nodeId || selectedNodeId})`;
 
-            const container = document.getElementById('dashboard-alerts-container');
+            document.getElementById('card-location-title').innerText = nodeData.location || 'Place';
+            document.getElementById('card-node-id').innerText = nodeData.nodeId || selectedNodeId;
+            document.getElementById('loc-node-id').innerText = nodeData.nodeId || selectedNodeId;
+            document.getElementById('loc-type').innerText = nodeData.type || 'Indoor Auditorium';
+            document.getElementById('loc-co2').innerText = `${nodeData.co2 || 0} ppm`;
+            document.getElementById('loc-aqi').innerText = `AQI ${nodeData.aqi || 0} (${nodeData.status || 'Good'})`;
+
+            const anaCo2 = document.getElementById('analytics-co2');
+            const anaAqi = document.getElementById('analytics-aqi');
+            if (anaCo2) anaCo2.innerText = `${nodeData.co2 || 0} ppm`;
+            if (anaAqi) anaAqi.innerText = nodeData.aqi || 0;
+
+            initOrUpdateAirQualityCharts();
+        }
+
+        function renderLogs() {
+            const container = document.getElementById('logs-container');
+            if (!container) return;
             container.innerHTML = '';
 
-            if (poorNodes.length === 0) {
-                container.innerHTML = `<div class="p-4 text-center text-slate-500 text-sm bg-white rounded-2xl border border-slate-100">All zones are operating within safe parameters.</div>`;
+            if (logs.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm">No telemetry logs stored in Firebase /air-quality/logs yet.</div>`;
                 return;
             }
 
-            poorNodes.forEach(node => {
-                const conf = statusConfig[node.status];
+            logs.forEach(log => {
+                let badgeClass = 'bg-slate-100 text-slate-600';
+                if (log.level === 'SUCCESS') badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60';
+                if (log.level === 'INFO') badgeClass = 'bg-indigo-50 text-indigo-700 border border-indigo-200/60';
+                if (log.level === 'WARNING' || log.level === 'HARDWARE') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-200/60';
+
                 container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-xs border border-slate-200 flex items-center justify-between cursor-pointer hover:border-rose-200 transition" onclick="viewNodeDetails('${node.id}')">
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/80 transition">
                         <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex justify-center items-center shrink-0">
-                                <i class="ph-fill ${conf.icon} text-2xl"></i>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-bold text-slate-800">${node.location}</h4>
-                                <p class="text-[11px] text-slate-500 uppercase tracking-wider mt-0.5">AQI: ${node.aqi} | CO₂: ${node.co2} ppm</p>
-                            </div>
+                            <span class="font-mono text-slate-400 text-[11px] shrink-0">${log.time || '10:00 AM'}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${log.type || 'Log'}</span>
+                            <span class="text-slate-700 font-medium">${log.text}</span>
                         </div>
-                        <div class="flex flex-col items-end">
-                            <span class="text-[10px] font-bold text-white bg-rose-500 px-2 py-1 rounded-md mb-1 animate-pulse">POOR</span>
-                            <span class="text-[10px] font-semibold text-indigo-600 flex items-center gap-1"><i class="ph-fill ph-fan"></i> Fan Auto-ON</span>
-                        </div>
+                        <span class="text-[10px] font-mono font-bold text-indigo-600 uppercase tracking-wider self-end sm:self-auto">${log.nodeId || 'ESP32'}</span>
                     </div>
                 `;
             });
         }
 
-        function renderMap(query = '') {
-            const container = document.getElementById('nodes-container');
+        function renderPlacesMap() {
+            const container = document.getElementById('places-grid-container');
+            if (!container) return;
             container.innerHTML = '';
 
-            const filtered = campusNodes.filter(n => n.location.toLowerCase().includes(query.toLowerCase()));
-
-            if (filtered.length === 0) {
-                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm col-span-full">No campus zones found matching "${query}"</div>`;
+            if (nodesList.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-slate-400 col-span-full border border-dashed border-slate-200 rounded-2xl">
+                        No places configured yet. Click "+ Add New Place" to set up an ESP32 monitored location.
+                    </div>
+                `;
                 return;
             }
 
-            filtered.forEach(node => {
-                const conf = statusConfig[node.status];
-                const border = node.status === 'Poor' ? 'border-rose-200' : 'border-slate-200';
+            nodesList.forEach(node => {
+                const isSelected = (node.nodeId || node.id) === selectedNodeId;
+                const border = isSelected ? 'border-indigo-500 ring-2 ring-indigo-200' : 'border-slate-200';
                 
                 container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-xs border ${border} flex items-center justify-between cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-${conf.color}-50 text-${conf.color}-600 rounded-full flex justify-center items-center">
-                                <i class="ph-fill ${conf.icon} text-xl"></i>
-                            </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border ${border} flex flex-col justify-between cursor-pointer hover:border-indigo-300 transition" onclick="selectPlaceNode('${node.nodeId || node.id}')">
+                        <div class="flex justify-between items-start mb-3">
                             <div>
-                                <h4 class="text-sm font-bold text-slate-800">${node.location}</h4>
-                                <p class="text-xs text-slate-400 font-medium">${node.id} • ${node.type}</p>
+                                <h4 class="text-base font-bold text-slate-800">${node.location || 'Monitored Place'}</h4>
+                                <p class="text-xs font-mono font-bold text-indigo-600">ESP Node ID: ${node.nodeId || node.id}</p>
                             </div>
+                            <span class="px-2.5 py-1 text-[10px] font-bold uppercase rounded-lg ${node.status === 'Good' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${node.status || 'Good'}</span>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-slate-800">${node.aqi} AQI</p>
-                            <p class="text-[11px] font-bold text-${conf.color}-600 uppercase mt-0.5">${node.status}</p>
+                        <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-3 rounded-xl">
+                            <div><span class="text-slate-400">CO₂ Emission:</span> <strong>${node.co2 || 0} ppm</strong></div>
+                            <div><span class="text-slate-400">Calculated AQI:</span> <strong>${node.aqi || 0}</strong></div>
+                            <div><span class="text-slate-400">Type:</span> <span>${node.type || 'Indoor'}</span></div>
+                            <div><span class="text-slate-400">Fan Relay:</span> <strong>${node.fanStatus || 'OFF'}</strong></div>
                         </div>
                     </div>
                 `;
             });
         }
 
-        function filterZones(query) {
-            renderMap(query);
-        }
-
-        // --- Bottom Sheet / Modal Logic ---
-        const backdrop = document.getElementById('sheet-backdrop');
-        const sheet = document.getElementById('bottom-sheet');
-        const sheetContent = document.getElementById('sheet-content');
-
-        function openBottomSheet(type) {
-            backdrop.classList.remove('pointer-events-none');
-            backdrop.classList.replace('opacity-0', 'opacity-100');
-            sheet.classList.remove('translate-y-full', 'opacity-0');
-            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
-
-            if (type === 'alerts') {
-                sheetContent.innerHTML = `
-                    <div class="text-center mb-6">
-                        <div class="inline-flex w-16 h-16 bg-sky-100 text-sky-600 rounded-full justify-center items-center mb-3">
-                            <i class="ph ph-cloud-check text-3xl"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800">System Online</h3>
-                        <p class="text-sm text-slate-500 mt-1">All sensor nodes are connected to Wi-Fi.</p>
-                    </div>
-                    <button class="w-full py-3 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transition" onclick="closeBottomSheet()">Dismiss</button>
-                `;
-            }
-        }
-
-        function viewNodeDetails(id) {
-            const data = campusNodes.find(n => n.id === id);
-            if (!data) return;
-
-            backdrop.classList.remove('pointer-events-none');
-            backdrop.classList.replace('opacity-0', 'opacity-100');
-            sheet.classList.remove('translate-y-full', 'opacity-0');
-            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
-
-            const conf = statusConfig[data.status];
-            const isFanOn = data.fanStatus === 'ON';
-            
-            sheetContent.innerHTML = `
-                <div class="flex items-center gap-4 mb-5">
-                    <div class="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex justify-center items-center shrink-0">
-                        <i class="ph-fill ${data.type === 'Indoor' ? 'ph-door' : 'ph-tree'} text-3xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xl font-bold text-slate-800">${data.location}</h3>
-                        <p class="text-sm font-medium text-slate-400">ESP32 Node: ${data.id}</p>
-                    </div>
-                </div>
-
-                <div class="p-3 mb-5 rounded-xl border ${isFanOn ? 'bg-indigo-50 border-indigo-100 text-indigo-800' : 'bg-slate-50 border-slate-100 text-slate-600'} flex justify-between items-center">
+        // Modal: Add New Place & Configure ESP Node ID
+        function openAddPlaceModal() {
+            const html = `
+                <div class="flex justify-between items-center mb-3">
                     <div class="flex items-center gap-2">
-                        <i class="ph-fill ph-fan ${isFanOn ? 'animate-[spin_2s_linear_infinite] text-indigo-600' : ''} text-xl"></i>
-                        <span class="text-sm font-bold">Cooling/Exhaust Fan</span>
+                        <i class="ph ph-plus-circle text-xl text-indigo-600"></i>
+                        <h3 class="text-xl font-bold text-slate-800">Add Monitored Place</h3>
                     </div>
-                    <span class="text-xs font-bold px-2 py-1 rounded bg-white shadow-xs uppercase">${data.fanStatus}</span>
+                    <button onclick="closeBottomSheet()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="ph ph-x text-xl"></i></button>
                 </div>
+                <p class="text-xs text-slate-500 mb-4">Configure a new place and assign a unique ESP32 Node ID for telemetry stream.</p>
 
-                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Sensor Array</h4>
-                
-                <div class="grid grid-cols-2 gap-3 mb-6">
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">PM2.5 (Dust)</span>
-                        <div class="flex items-end justify-between">
-                            <span class="text-lg font-bold text-slate-800">${data.pm25}</span>
-                            <span class="text-[10px] text-slate-400 pb-1">µg/m³</span>
-                        </div>
+                <form onsubmit="submitAddPlace(event)" class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">Place / Location Name</label>
+                        <input type="text" id="add-location-name" required placeholder="e.g. Library Reading Hall" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm mt-1 focus:outline-none focus:border-indigo-500">
                     </div>
-                    <div class="bg-white p-3 rounded-xl border ${data.co2 > 1000 ? 'border-rose-200 bg-rose-50' : 'border-slate-200'} shadow-xs flex flex-col justify-between">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">CO₂ Emission</span>
-                        <div class="flex items-end justify-between">
-                            <span class="text-lg font-bold ${data.co2 > 1000 ? 'text-rose-600' : 'text-slate-800'}">${data.co2}</span>
-                            <span class="text-[10px] text-slate-400 pb-1">ppm</span>
-                        </div>
-                    </div>
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-xs flex flex-col justify-between">
-                        <span class="text-[10px] text-slate-500 font-bold uppercase mb-1">NO₂ Gas</span>
-                        <div class="flex items-end justify-between">
-                            <span class="text-lg font-bold text-slate-800">${data.no2}</span>
-                            <span class="text-[10px] text-slate-400 pb-1">ppb</span>
-                        </div>
-                    </div>
-                    <div class="bg-indigo-600 p-3 rounded-xl shadow-xs text-white flex flex-col justify-between">
-                        <span class="text-[10px] text-white/80 font-bold uppercase mb-1">Calculated AQI</span>
-                        <div class="flex items-center justify-between">
-                            <span class="text-2xl font-bold">${data.aqi}</span>
-                            <i class="ph-fill ${conf.icon} text-2xl opacity-80"></i>
-                        </div>
-                    </div>
-                </div>
 
-                <button class="w-full py-3.5 bg-slate-800 text-white font-semibold rounded-xl shadow-md hover:bg-slate-900 transition" onclick="closeBottomSheet()">Close Telemetry</button>
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-indigo-700">Configure ESP32 Node ID</label>
+                            <input type="text" id="add-node-id" required placeholder="e.g. NODE-02" value="NODE-0${nodesList.length + 1}" class="w-full bg-indigo-50/50 border border-indigo-200 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-indigo-800 mt-1 focus:outline-none focus:border-indigo-500 uppercase">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Environment Type</label>
+                            <select id="add-env-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-indigo-500">
+                                <option value="Indoor Auditorium">Indoor Auditorium</option>
+                                <option value="Classroom Block">Classroom Block</option>
+                                <option value="Library Hall">Library Hall</option>
+                                <option value="Laboratory">Laboratory</option>
+                                <option value="Outdoor Quad">Outdoor Quad</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Initial CO₂ (ppm)</label>
+                            <input type="number" id="add-co2" value="850" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Initial AQI Score</label>
+                            <input type="number" id="add-aqi" value="45" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="add-place-btn" class="w-full py-3.5 bg-indigo-600 text-white font-semibold rounded-xl shadow-md hover:bg-indigo-700 transition mt-2 cursor-pointer">
+                        Save Place & ESP ID to Firebase
+                    </button>
+                </form>
             `;
+            openModalHtml(html);
         }
 
-        function closeBottomSheet() {
-            backdrop.classList.add('pointer-events-none');
-            backdrop.classList.replace('opacity-100', 'opacity-0');
-            sheet.classList.add('translate-y-full', 'opacity-0');
-            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        async function submitAddPlace(e) {
+            e.preventDefault();
+            const btn = document.getElementById('add-place-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Saving Place to Firebase...';
+            }
+
+            const location = document.getElementById('add-location-name').value.trim();
+            const nodeId = document.getElementById('add-node-id').value.trim().toUpperCase();
+            const type = document.getElementById('add-env-type').value;
+            const co2 = Number(document.getElementById('add-co2').value);
+            const aqi = Number(document.getElementById('add-aqi').value);
+
+            try {
+                const res = await fetch('/api/air-quality', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'CREATE_PLACE',
+                        nodeId,
+                        location,
+                        type,
+                        co2,
+                        aqi
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeBottomSheet();
+                    selectedNodeId = nodeId;
+                    await fetchAirQualityFromApi();
+                } else {
+                    alert('Error saving place: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('API error: ' + err.message);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
         }
 
-        // Initialize App
-        renderHome();
+        function openNodeConfigModal() {
+            openAddPlaceModal();
+        }
+
+        // Initialize App & Fetch Live Data from Firebase
+        const initialPage = getPageFromUrl();
+        switchPage(initialPage, false);
+        fetchAirQualityFromApi();
     </script>
 </body>
 </html>

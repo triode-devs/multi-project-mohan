@@ -27,10 +27,10 @@
 </head>
 <body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
 
-    <!-- Global Header -->
-    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <!-- Global Fixed Top Header -->
+    <header class="bg-white border-b border-slate-200 fixed top-0 left-0 right-0 z-30 shadow-xs">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchPage('home')">
                 <div class="w-10 h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center shadow-md">
                     <i class="ph ph-first-aid text-2xl"></i>
                 </div>
@@ -42,48 +42,50 @@
 
             <!-- Desktop Nav Links -->
             <nav class="hidden md:flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
-                <button onclick="switchPage('home')" class="nav-btn text-teal-600 bg-white shadow-xs px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="home">
+                <button onclick="switchPage('home')" class="nav-btn text-teal-600 bg-white shadow-xs px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer" data-target="home">
                     <i class="ph-fill ph-house text-lg"></i>
                     <span>Dashboard</span>
                 </button>
-                <button onclick="switchPage('scan')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="scan">
-                    <i class="ph ph-scan text-lg"></i>
-                    <span>Scan Tag</span>
-                </button>
-                <button onclick="switchPage('stock')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="stock">
+                <button onclick="switchPage('stock')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer" data-target="stock">
                     <i class="ph ph-package text-lg"></i>
                     <span>Inventory</span>
                 </button>
-                <button onclick="switchPage('settings')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="settings">
+                <button onclick="switchPage('scan')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer" data-target="scan">
+                    <i class="ph ph-scan text-lg"></i>
+                    <span>ESP32 Scan</span>
+                </button>
+                <button onclick="switchPage('settings')" class="nav-btn text-slate-500 hover:text-teal-600 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer" data-target="settings">
                     <i class="ph ph-gear text-lg"></i>
                     <span>Settings</span>
                 </button>
             </nav>
 
             <div class="flex items-center gap-3">
-                <div class="relative">
-                    <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex justify-center items-center cursor-pointer hover:bg-teal-100 transition" onclick="openBottomSheet('notifications')">
-                        <i class="ph ph-bell text-xl"></i>
-                    </div>
-                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-white rounded-full"></span>
-                </div>
+                <button onclick="openCustomStockModal()" class="px-3 py-2 bg-teal-600 text-white text-xs font-semibold rounded-xl hover:bg-teal-700 active:scale-95 transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                    <i class="ph ph-plus-circle text-base"></i>
+                    <span>Custom Stock Entry</span>
+                </button>
+                <button onclick="fetchInventoryFromApi()" title="Sync with Firebase API" class="px-3 py-2 bg-teal-50 text-teal-700 text-xs font-semibold rounded-xl hover:bg-teal-100 active:scale-95 transition flex items-center gap-1.5 border border-teal-200/60 cursor-pointer">
+                    <i class="ph ph-arrows-counter-clockwise text-base" id="sync-icon"></i>
+                    <span class="hidden sm:inline">Sync API</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 pb-24 md:pb-8">
+    <!-- Main Container (Padded for Fixed Header) -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-24 pb-24 md:pt-28 md:pb-8 flex-1">
         
         <!-- PAGE: HOME -->
         <div id="page-home" class="page space-y-6">
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-blue-200 transition" onclick="switchPage('stock')">
                     <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex justify-center items-center mb-4">
                         <i class="ph ph-pill text-xl"></i>
                     </div>
                     <div>
                         <h2 class="text-3xl font-bold text-slate-800" id="stat-total">0</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-1">Total Items</p>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Total Stock Units (Live)</p>
                     </div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-orange-200 transition" onclick="switchPage('stock')">
@@ -95,49 +97,52 @@
                         <p class="text-xs text-slate-500 font-medium mt-1">Action Needed</p>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-teal-200 transition" onclick="switchPage('scan')">
                     <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex justify-center items-center mb-4">
-                        <i class="ph ph-wifi-high text-xl"></i>
+                        <i class="ph ph-scales text-xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-teal-600">Online</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-1">Cabinet ESP32 Hardware</p>
+                        <h2 class="text-xl font-bold text-teal-600" id="stat-weight">0 g</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Total Shelf Weight (HX711)</p>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-teal-200 transition" onclick="switchPage('scan')">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-teal-300 transition" onclick="openCustomStockModal()">
                     <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex justify-center items-center mb-4">
-                        <i class="ph ph-scan text-xl"></i>
+                        <i class="ph ph-plus-circle text-xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">Quick Scan</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-1">Simulate RFID / QR Scan</p>
+                        <h2 class="text-lg font-bold text-slate-800">Add Stock Entry</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Simple 1 Qty / 2 Qty Weight</p>
                     </div>
                 </div>
             </div>
 
+            <!-- Recent Alerts & Stock Status -->
             <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Recent Cabinet Alerts</h3>
-                    <span class="text-xs text-teal-600 font-semibold cursor-pointer" onclick="switchPage('stock')">View Inventory &rarr;</span>
+                    <h3 class="text-lg font-bold text-slate-800">Recent Cabinet Alerts & Stock Status</h3>
+                    <span class="text-xs text-teal-600 font-semibold cursor-pointer hover:underline" onclick="switchPage('stock')">View Inventory &rarr;</span>
                 </div>
                 <div id="home-alerts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Populated by JS -->
                 </div>
             </section>
-        </div>
 
-        <!-- PAGE: SCAN -->
-        <div id="page-scan" class="page hidden max-w-xl mx-auto bg-white p-8 rounded-3xl shadow-xs border border-slate-200 text-center space-y-6 my-8">
-            <div class="relative w-48 h-48 mx-auto border-4 border-dashed border-teal-400 rounded-3xl flex items-center justify-center bg-teal-50/50">
-                <i class="ph ph-scan text-6xl text-teal-600 animate-pulse"></i>
-            </div>
-            <div>
-                <h3 class="text-2xl font-bold text-slate-800">Ready to Scan</h3>
-                <p class="text-sm text-slate-500 mt-2 max-w-xs mx-auto">Place medicine RFID tag near the cabinet sensor or scan QR code.</p>
-            </div>
-            <button onclick="simulateScan()" class="bg-teal-600 text-white font-semibold py-3 px-8 rounded-xl shadow-lg shadow-teal-200 hover:bg-teal-700 active:scale-95 transition-all">
-                Simulate Scan
-            </button>
+            <!-- ESP32 & UI Activity Logs stored in Firebase /medicine/logs -->
+            <section class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Cabinet Activity & ESP32 Telemetry Logs</h3>
+                        <p class="text-xs text-slate-400">Stored at /medicine/logs in Firebase</p>
+                    </div>
+                    <button onclick="fetchInventoryFromApi()" class="text-xs text-teal-600 font-semibold cursor-pointer hover:underline">
+                        Sync Firebase Logs &rarr;
+                    </button>
+                </div>
+                <div id="medicine-logs-container" class="divide-y divide-slate-100 text-xs">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
         </div>
 
         <!-- PAGE: STOCK -->
@@ -145,15 +150,51 @@
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
                 <div class="relative w-full sm:w-80">
                     <i class="ph ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
-                    <input type="text" id="stock-search" oninput="filterStock(this.value)" placeholder="Search inventory..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-teal-500 transition">
+                    <input type="text" id="stock-search" oninput="filterStock(this.value)" placeholder="Search live inventory..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 pl-11 pr-4 text-sm focus:outline-none focus:border-teal-500 transition">
                 </div>
-                <button onclick="switchPage('scan')" class="bg-teal-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-teal-700 transition flex items-center gap-2">
-                    <i class="ph ph-plus text-base"></i> Add New Medicine
-                </button>
+                <div class="flex gap-2 w-full sm:w-auto">
+                    <button onclick="openCustomStockModal()" class="w-full sm:w-auto bg-teal-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-teal-700 transition flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                        <i class="ph ph-plus-circle text-base"></i> Custom Stock Entry
+                    </button>
+                    <button onclick="switchPage('scan')" class="w-full sm:w-auto bg-slate-100 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl hover:bg-slate-200 transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i class="ph ph-scan text-base"></i> ESP32 Scan
+                    </button>
+                </div>
             </div>
             <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden" id="stock-list-container">
                 <!-- Populated by JS -->
             </div>
+        </div>
+
+        <!-- PAGE: SCAN -->
+        <div id="page-scan" class="page hidden max-w-xl mx-auto bg-white p-8 rounded-3xl shadow-xs border border-slate-200 text-center space-y-6 my-4">
+            <div class="relative w-40 h-40 mx-auto border-4 border-dashed border-teal-400 rounded-3xl flex items-center justify-center bg-teal-50/50">
+                <i class="ph ph-scan text-5xl text-teal-600 animate-pulse"></i>
+            </div>
+            <div>
+                <h3 class="text-2xl font-bold text-slate-800">Simulate ESP32 Load Cell Scan</h3>
+                <p class="text-xs text-slate-500 mt-1 max-w-xs mx-auto">Demonstrate 1 Qty (12g) & 2 Qty (22g) weight measurement.</p>
+            </div>
+            <div class="max-w-xs mx-auto space-y-3 text-left">
+                <div>
+                    <label class="text-xs font-bold text-slate-500">RFID Tag ID</label>
+                    <input type="text" id="scan-tag-id" value="RFID-84920" placeholder="e.g. RFID-84920" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-slate-500">1 Qty Weight (g)</label>
+                        <input type="number" id="scan-w1" value="12" placeholder="12g" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                    </div>
+                    <div class="w-1/2">
+                        <label class="text-xs font-bold text-slate-500">2 Qty Weight (g)</label>
+                        <input type="number" id="scan-w2" value="22" placeholder="22g" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-2 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                    </div>
+                </div>
+                <p class="text-[11px] text-teal-600 font-medium text-center">Unit Wt: 22g - 12g = 10g/unit • Tare: 12g - 10g = 2g</p>
+            </div>
+            <button onclick="simulateEspWeightUpdate()" id="scan-btn" class="bg-teal-600 text-white font-semibold py-3 px-8 rounded-xl shadow-md hover:bg-teal-700 active:scale-95 transition-all w-full cursor-pointer">
+                Post ESP32 Weight Update to API
+            </button>
         </div>
 
         <!-- PAGE: SETTINGS -->
@@ -161,58 +202,53 @@
             <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <i class="ph ph-wifi-high text-2xl text-teal-600"></i>
+                        <i class="ph ph-cloud text-2xl text-teal-600"></i>
                         <div>
-                            <p class="text-sm font-bold text-slate-800">ESP32 Cabinet Status</p>
-                            <p class="text-xs text-slate-400">IP: 192.168.1.104</p>
+                            <p class="text-sm font-bold text-slate-800">Firebase Realtime Path</p>
+                            <p class="text-xs text-slate-400">/medicine.json & /medicine/logs</p>
                         </div>
                     </div>
-                    <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">Connected</span>
+                    <span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-lg">Live API Active</span>
                 </div>
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <i class="ph ph-bell-ringing text-2xl text-teal-600"></i>
+                        <i class="ph ph-scales text-2xl text-teal-600"></i>
                         <div>
-                            <p class="text-sm font-bold text-slate-800">Push Notifications</p>
-                            <p class="text-xs text-slate-400">Receive alerts for low stock and expiration</p>
+                            <p class="text-sm font-bold text-slate-800">HX711 Load Cell Weight Calibration</p>
+                            <p class="text-xs text-slate-400">Auto 1-Qty & 2-Qty Weight Calibration Enabled</p>
                         </div>
                     </div>
-                    <div class="w-11 h-6 bg-teal-500 rounded-full relative cursor-pointer">
-                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-xs"></div>
-                    </div>
+                    <span class="px-3 py-1 bg-teal-100 text-teal-700 text-xs font-bold rounded-lg">Enabled</span>
                 </div>
             </div>
-            <button class="w-full py-3.5 text-red-600 font-semibold bg-red-50 rounded-xl border border-red-200 hover:bg-red-100 transition">
-                Disconnect Cabinet Hardware
-            </button>
         </div>
     </main>
 
-    <!-- Mobile Bottom Navigation Bar -->
+    <!-- Global Fixed Bottom Mobile Navigation Bar -->
     <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 shadow-lg">
-        <button onclick="switchPage('home')" class="nav-btn text-teal-600 flex flex-col items-center gap-1 w-16" data-target="home">
+        <button onclick="switchPage('home')" class="nav-btn text-teal-600 flex flex-col items-center gap-1 w-16 cursor-pointer" data-target="home">
             <i class="ph-fill ph-house text-2xl"></i>
             <span class="text-[10px] font-semibold">Home</span>
         </button>
-        <button onclick="switchPage('scan')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition" data-target="scan">
-            <i class="ph ph-scan text-2xl"></i>
-            <span class="text-[10px] font-semibold">Scan</span>
-        </button>
-        <button onclick="switchPage('stock')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition" data-target="stock">
+        <button onclick="switchPage('stock')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="stock">
             <i class="ph ph-package text-2xl"></i>
             <span class="text-[10px] font-semibold">Stock</span>
         </button>
-        <button onclick="switchPage('settings')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition" data-target="settings">
+        <button onclick="switchPage('scan')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="scan">
+            <i class="ph ph-scan text-2xl"></i>
+            <span class="text-[10px] font-semibold">ESP32</span>
+        </button>
+        <button onclick="switchPage('settings')" class="nav-btn text-slate-400 hover:text-teal-600 flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="settings">
             <i class="ph ph-gear text-2xl"></i>
             <span class="text-[10px] font-semibold">Settings</span>
         </button>
     </nav>
 
-    <!-- Modal / Bottom Sheet Backdrop -->
+    <!-- Modal Backdrop -->
     <div id="sheet-backdrop" class="fixed inset-0 bg-slate-900/50 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-xs" onclick="closeBottomSheet()"></div>
     
-    <!-- Modal / Bottom Sheet Container -->
-    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-md bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
+    <!-- Modal Container -->
+    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-lg bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
         <div class="flex justify-center p-3 cursor-pointer md:hidden" onclick="closeBottomSheet()">
             <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
         </div>
@@ -223,35 +259,70 @@
 
     <!-- Application Logic -->
     <script>
-        // --- Mock Data Store ---
-        const inventory = [
-            { id: 1, name: "Amoxicillin", type: "RFID", count: 14, expiry: "2027-05-10", status: "Fresh" },
-            { id: 2, name: "Vitamin C", type: "QR", count: 30, expiry: "2026-11-20", status: "Fresh" },
-            { id: 3, name: "Paracetamol", type: "RFID", count: 2, expiry: "2027-01-15", status: "Low Stock" },
-            { id: 4, name: "Aspirin 500mg", type: "RFID", count: 10, expiry: "2026-07-12", status: "Expired" },
-            { id: 5, name: "Ibuprofen", type: "QR", count: 24, expiry: "2028-02-22", status: "Fresh" },
-            { id: 6, name: "Cough Syrup", type: "QR", count: 1, expiry: "2026-09-01", status: "Low Stock" }
-        ];
+        let inventory = [];
+        let logs = [];
 
-        // --- Navigation Logic ---
         const pageTitles = {
             'home': { title: 'Smart Cabinet', sub: 'Welcome back,' },
-            'scan': { title: 'Scan Medicine', sub: 'Add or Verify' },
+            'scan': { title: 'ESP32 Load Cell', sub: 'Weight & RFID' },
             'stock': { title: 'Inventory', sub: 'Manage Cabinet' },
             'settings': { title: 'Settings', sub: 'Preferences' }
         };
 
-        function switchPage(pageId) {
-            // Hide all pages
-            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
-            // Show target page
-            document.getElementById(`page-${pageId}`).classList.remove('hidden');
-            
-            // Update Header
-            document.getElementById('header-title').innerText = pageTitles[pageId].title;
-            document.getElementById('header-subtitle').innerText = pageTitles[pageId].sub;
+        // Safe Helper to get Modal Elements
+        function getModalDom() {
+            return {
+                backdrop: document.getElementById('sheet-backdrop'),
+                sheet: document.getElementById('bottom-sheet'),
+                sheetContent: document.getElementById('sheet-content')
+            };
+        }
 
-            // Update Nav Icons
+        function openModalHtml(htmlContent) {
+            const { backdrop, sheet, sheetContent } = getModalDom();
+            if (!backdrop || !sheet || !sheetContent) return;
+
+            sheetContent.innerHTML = htmlContent;
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        function closeBottomSheet() {
+            const { backdrop, sheet } = getModalDom();
+            if (!backdrop || !sheet) return;
+
+            backdrop.classList.add('pointer-events-none');
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            sheet.classList.add('translate-y-full', 'opacity-0');
+            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        // --- Parameter & Hash-Based Redirection System ---
+        function getPageFromUrl() {
+            const hash = window.location.hash.replace('#', '').trim().toLowerCase();
+            if (hash && pageTitles[hash]) return hash;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const paramPage = urlParams.get('page')?.trim().toLowerCase();
+            if (paramPage && pageTitles[paramPage]) return paramPage;
+
+            return 'home';
+        }
+
+        function switchPage(pageId, updateUrl = true) {
+            if (!pageTitles[pageId]) pageId = 'home';
+
+            document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) targetPage.classList.remove('hidden');
+            
+            if (pageTitles[pageId]) {
+                document.getElementById('header-title').innerText = pageTitles[pageId].title;
+                document.getElementById('header-subtitle').innerText = pageTitles[pageId].sub;
+            }
+
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const icon = btn.querySelector('i');
                 if (btn.dataset.target === pageId) {
@@ -268,37 +339,391 @@
                 }
             });
 
-            if(pageId === 'home') renderHome();
+            if (updateUrl && window.location.hash !== `#${pageId}`) {
+                history.pushState(null, '', `#${pageId}`);
+            }
+
+            if(pageId === 'home') {
+                renderHome();
+                renderMedicineLogs();
+            }
             if(pageId === 'stock') renderStock();
-            
             closeBottomSheet();
         }
 
-        // --- Render Functions ---
+        // Listen for browser back/forward and hash changes
+        window.addEventListener('hashchange', () => {
+            switchPage(getPageFromUrl(), false);
+        });
+        window.addEventListener('popstate', () => {
+            switchPage(getPageFromUrl(), false);
+        });
+
+        // Simple 1-Qty and 2-Qty Weight Auto Calculator inside Form
+        function updateSimpleWeightCalc(prefix = 'custom') {
+            const w1El = document.getElementById(`${prefix}-w1`);
+            const w2El = document.getElementById(`${prefix}-w2`);
+            const calcTextEl = document.getElementById(`${prefix}-calc-text`);
+
+            if (w1El && w2El && calcTextEl) {
+                const w1 = Number(w1El.value) || 0;
+                let w2 = Number(w2El.value) || 0;
+                
+                // If 2 Qty Weight is blank or empty, default to double (2x) of 1 Qty Weight!
+                if (!w2El.value && w1 > 0) {
+                    w2 = w1 * 2;
+                    w2El.placeholder = `Default: ${w2.toFixed(1)}g (2x)`;
+                }
+
+                if (w1 > 0) {
+                    const actualW2 = w2 > w1 ? w2 : (w1 * 2);
+                    const unitWeight = actualW2 - w1;
+                    const tareWeight = Math.max(0, w1 - unitWeight);
+                    calcTextEl.innerHTML = `1 Unit Wt: <strong>${unitWeight.toFixed(1)}g</strong> • Base Tare: <strong>${tareWeight.toFixed(1)}g</strong> ${!w2El.value ? '(Auto-Doubled 2x)' : ''}`;
+                } else {
+                    calcTextEl.innerHTML = `Enter 1 Qty weight (2 Qty weight is optional & defaults to double).`;
+                }
+            }
+        }
+
+        // Fetch Live API
+        async function fetchInventoryFromApi() {
+            const syncIcon = document.getElementById('sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+
+            try {
+                const res = await fetch('/api/medicine');
+                const data = await res.json();
+
+                if (data.success) {
+                    if (Array.isArray(data.inventory)) inventory = data.inventory;
+                    if (Array.isArray(data.logs)) logs = data.logs;
+                }
+            } catch (err) {
+                console.error('Failed to fetch medicine inventory from API:', err);
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin');
+                renderHome();
+                renderStock();
+                renderMedicineLogs();
+            }
+        }
+
+        function renderMedicineLogs() {
+            const container = document.getElementById('medicine-logs-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            if (logs.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm">No cabinet logs recorded in Firebase /medicine/logs yet.</div>`;
+                return;
+            }
+
+            logs.forEach(log => {
+                let badgeClass = 'bg-teal-50 text-teal-700 border border-teal-200/60';
+                if (log.level === 'WARNING') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-200/60';
+                if (log.level === 'DANGER') badgeClass = 'bg-red-50 text-red-700 border border-red-200/60';
+                if (log.level === 'INFO') badgeClass = 'bg-blue-50 text-blue-700 border border-blue-200/60';
+
+                container.innerHTML += `
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/80 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-slate-400 text-[11px] shrink-0">${log.time || '10:00 AM'}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${log.type || 'Log'}</span>
+                            <span class="text-slate-700 font-medium">${log.text}</span>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold text-teal-700 uppercase tracking-wider self-end sm:self-auto">${log.tagUid || 'Cabinet'}</span>
+                    </div>
+                `;
+            });
+        }
+
+        async function deleteProduct(id, name) {
+            if (!confirm(`Are you sure you want to delete "${name}" from Firebase inventory?`)) {
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/medicine?id=${encodeURIComponent(id)}`, {
+                    method: 'DELETE'
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    closeBottomSheet();
+                    await fetchInventoryFromApi();
+                } else {
+                    alert('Delete failed: ' + (data.message || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Delete API error: ' + err.message);
+            }
+        }
+
+        // Custom Stock Entry Modal Popup
+        function openCustomStockModal() {
+            const html = `
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-xl font-bold text-slate-800">Add Product Entry</h3>
+                    <button onclick="closeBottomSheet()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="ph ph-x text-xl"></i></button>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Enter 1 Qty weight from scale. 2 Qty weight is optional and defaults to double (2x).</p>
+
+                <form onsubmit="submitCustomStock(event)" class="space-y-3.5">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">Product Name</label>
+                        <input type="text" id="custom-name" required placeholder="e.g. Paracetamol 500mg" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">RFID Tag UID</label>
+                            <input type="text" id="custom-id" placeholder="e.g. RFID-1001" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Stock Type</label>
+                            <select id="custom-stock-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                                <option value="Single Tablet">Single Tablet</option>
+                                <option value="Tablet Strip / Pack">Tablet Strip / Pack</option>
+                                <option value="Bottle / Container">Bottle / Container</option>
+                                <option value="Syringe / Set">Syringe / Set</option>
+                                <option value="Box / Set">Box / Set</option>
+                                <option value="RFID Tag">RFID Tag</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/3">
+                            <label class="text-xs font-bold text-slate-700">Current Qty</label>
+                            <input type="number" id="custom-count" value="2" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                        </div>
+                        <div class="w-1/3">
+                            <label class="text-xs font-bold text-teal-700">1 Qty Weight (g)</label>
+                            <input type="number" id="custom-w1" value="12" min="0.1" step="0.1" oninput="updateSimpleWeightCalc('custom')" required placeholder="e.g. 12g" class="w-full bg-teal-50/50 border border-teal-200 rounded-xl px-3 py-2.5 text-sm mt-1 font-bold text-teal-800 focus:outline-none focus:border-teal-500">
+                        </div>
+                        <div class="w-1/3">
+                            <label class="text-xs font-bold text-teal-700">2 Qty Wt <span class="text-[10px] text-slate-400 font-normal">(Opt)</span></label>
+                            <input type="number" id="custom-w2" min="0.1" step="0.1" oninput="updateSimpleWeightCalc('custom')" placeholder="Default 24g" class="w-full bg-teal-50/50 border border-teal-200 rounded-xl px-3 py-2.5 text-sm mt-1 font-bold text-teal-800 focus:outline-none focus:border-teal-500">
+                        </div>
+                    </div>
+
+                    <div class="bg-teal-50 p-3 rounded-xl border border-teal-200/80 text-xs text-teal-800 font-medium flex items-center justify-between">
+                        <span id="custom-calc-text">1 Unit Wt: <strong>12.0g</strong> • Base Tare: <strong>0.0g</strong> (Auto-Doubled 2x)</span>
+                        <i class="ph ph-scales text-lg text-teal-600"></i>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">Expiry Date</label>
+                        <input type="date" id="custom-expiry" value="2027-12-31" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs mt-1 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <button type="submit" id="custom-submit-btn" class="w-full py-3.5 bg-teal-600 text-white font-semibold rounded-xl shadow-md hover:bg-teal-700 transition mt-2 cursor-pointer">
+                        Save Product Entry to Firebase
+                    </button>
+                </form>
+            `;
+            openModalHtml(html);
+            updateSimpleWeightCalc('custom');
+        }
+
+        // Open Edit RFID & Product Details Modal
+        function openEditRfidModal(oldId) {
+            const data = inventory.find(i => String(i.id) === String(oldId));
+            if (!data) return;
+
+            const w1 = data.weightQty1 || ((data.unitWeightGrams || 10) + (data.tareWeightGrams || 0));
+            const w2 = data.weightQty2 || (((data.unitWeightGrams || 10) * 2) + (data.tareWeightGrams || 0));
+
+            const html = `
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="ph ph-pencil-simple text-xl text-teal-600"></i>
+                        <h3 class="text-xl font-bold text-slate-800">Modify RFID & Weight</h3>
+                    </div>
+                    <button onclick="closeBottomSheet()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="ph ph-x text-xl"></i></button>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Edit RFID Tag UID value or update 1 Qty and 2 Qty weights.</p>
+
+                <form onsubmit="submitRfidModification(event, '${data.id}')" class="space-y-3.5">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">RFID Tag UID Value (Edit Tag ID)</label>
+                        <input type="text" id="edit-rfid-value" value="${data.tagUid || data.id}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm mt-1 font-bold text-teal-700 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">Product Name</label>
+                        <input type="text" id="edit-name" value="${data.name}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Stock Type</label>
+                            <select id="edit-stock-type" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                                <option value="Single Tablet" ${data.stockType === 'Single Tablet' ? 'selected' : ''}>Single Tablet</option>
+                                <option value="Tablet Strip / Pack" ${data.stockType === 'Tablet Strip / Pack' ? 'selected' : ''}>Tablet Strip / Pack</option>
+                                <option value="Bottle / Container" ${data.stockType === 'Bottle / Container' ? 'selected' : ''}>Bottle / Container</option>
+                                <option value="Syringe / Set" ${data.stockType === 'Syringe / Set' ? 'selected' : ''}>Syringe / Set</option>
+                                <option value="Box / Set" ${data.stockType === 'Box / Set' ? 'selected' : ''}>Box / Set</option>
+                                <option value="RFID Tag" ${data.stockType === 'RFID Tag' ? 'selected' : ''}>RFID Tag</option>
+                            </select>
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Current Qty</label>
+                            <input type="number" id="edit-count" value="${data.count}" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-teal-500">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-teal-700">1 Qty Weight (g)</label>
+                            <input type="number" id="edit-w1" value="${w1}" min="0.1" step="0.1" oninput="updateSimpleWeightCalc('edit')" required class="w-full bg-teal-50/50 border border-teal-200 rounded-xl px-3 py-2.5 text-sm mt-1 font-bold text-teal-800 focus:outline-none focus:border-teal-500">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-teal-700">2 Qty Wt (g) <span class="text-[10px] text-slate-400 font-normal">(Optional)</span></label>
+                            <input type="number" id="edit-w2" value="${w2}" min="0.1" step="0.1" oninput="updateSimpleWeightCalc('edit')" placeholder="Default ${(w1 * 2).toFixed(1)}g" class="w-full bg-teal-50/50 border border-teal-200 rounded-xl px-3 py-2.5 text-sm mt-1 font-bold text-teal-800 focus:outline-none focus:border-teal-500">
+                        </div>
+                    </div>
+
+                    <div class="bg-teal-50 p-3 rounded-xl border border-teal-200/80 text-xs text-teal-800 font-medium flex items-center justify-between">
+                        <span id="edit-calc-text">1 Unit Wt: <strong>${(w2 - w1).toFixed(1)}g</strong> • Base Tare: <strong>${(w1 - (w2 - w1)).toFixed(1)}g</strong></span>
+                        <i class="ph ph-scales text-lg text-teal-600"></i>
+                    </div>
+
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">Expiry Date</label>
+                        <input type="date" id="edit-expiry" value="${data.expiry}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-xs mt-1 focus:outline-none focus:border-teal-500">
+                    </div>
+
+                    <div class="flex gap-3 mt-4">
+                        <button type="button" onclick="closeBottomSheet()" class="w-1/3 py-3 bg-slate-100 text-slate-700 font-semibold rounded-xl hover:bg-slate-200 transition cursor-pointer">Cancel</button>
+                        <button type="submit" id="edit-submit-btn" class="w-2/3 py-3 bg-teal-600 text-white font-semibold rounded-xl shadow-md hover:bg-teal-700 transition cursor-pointer">Update Product</button>
+                    </div>
+                </form>
+            `;
+            openModalHtml(html);
+            updateSimpleWeightCalc('edit');
+        }
+
+        async function submitRfidModification(e, oldId) {
+            e.preventDefault();
+            const btn = document.getElementById('edit-submit-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Updating Product in Firebase...';
+            }
+
+            const newTagUid = document.getElementById('edit-rfid-value').value.trim();
+            const name = document.getElementById('edit-name').value.trim();
+            const stockType = document.getElementById('edit-stock-type').value;
+            const count = Number(document.getElementById('edit-count').value);
+            const weightQty1 = Number(document.getElementById('edit-w1').value) || 0;
+            let weightQty2 = Number(document.getElementById('edit-w2').value);
+            if (!weightQty2 || weightQty2 <= 0) weightQty2 = weightQty1 * 2;
+            const expiry = document.getElementById('edit-expiry').value;
+
+            try {
+                const res = await fetch('/api/medicine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        oldId,
+                        tagUid: newTagUid,
+                        id: newTagUid,
+                        name,
+                        stockType,
+                        count,
+                        weightQty1,
+                        weightQty2,
+                        expiry
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeBottomSheet();
+                    await fetchInventoryFromApi();
+                } else {
+                    alert('Error updating product: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('API error: ' + err.message);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        async function submitCustomStock(e) {
+            e.preventDefault();
+            const btn = document.getElementById('custom-submit-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Saving to Firebase...';
+            }
+
+            const name = document.getElementById('custom-name').value;
+            const id = document.getElementById('custom-id').value || ('RFID-' + Date.now().toString().slice(-4));
+            const stockType = document.getElementById('custom-stock-type').value;
+            const count = Number(document.getElementById('custom-count').value);
+            const weightQty1 = Number(document.getElementById('custom-w1').value) || 0;
+            let weightQty2 = Number(document.getElementById('custom-w2').value);
+            if (!weightQty2 || weightQty2 <= 0) weightQty2 = weightQty1 * 2;
+            const expiry = document.getElementById('custom-expiry').value;
+
+            try {
+                const res = await fetch('/api/medicine', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id, tagUid: id, name, stockType, count, weightQty1, weightQty2, expiry
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeBottomSheet();
+                    await fetchInventoryFromApi();
+                } else {
+                    alert('Error saving stock: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('API error: ' + err.message);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
         function renderHome() {
-            const totalItems = inventory.reduce((sum, item) => sum + item.count, 0);
-            const alerts = inventory.filter(i => i.status === 'Expired' || i.status === 'Low Stock');
+            const totalItems = inventory.reduce((sum, item) => sum + (Number(item.count) || 0), 0);
+            const totalWeight = inventory.reduce((sum, item) => sum + (Number(item.weightGrams) || 0), 0);
+            const alerts = inventory.filter(i => i.status === 'Expired' || i.status === 'Low Stock' || i.status === 'Out of Stock');
             
             document.getElementById('stat-total').innerText = totalItems;
             document.getElementById('stat-alerts').innerText = alerts.length;
+            document.getElementById('stat-weight').innerText = `${totalWeight} g`;
 
             const alertsContainer = document.getElementById('home-alerts-container');
             alertsContainer.innerHTML = '';
 
-            alerts.forEach(item => {
-                const isExpired = item.status === 'Expired';
-                const color = isExpired ? 'red' : 'amber';
-                const icon = isExpired ? 'ph-x-circle' : 'ph-warning-circle';
-                const desc = isExpired ? `Expired on ${item.expiry}` : `Low Stock: ${item.count} unit(s) left`;
+            if (inventory.length === 0) {
+                alertsContainer.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm col-span-full">No active cabinet items. Click "Custom Stock Entry" to add medicine.</div>`;
+                return;
+            }
+
+            inventory.forEach(item => {
+                const color = item.status === 'Expired' ? 'red' : (item.status === 'Out of Stock' ? 'rose' : (item.status === 'Low Stock' ? 'amber' : 'teal'));
                 
                 alertsContainer.innerHTML += `
-                    <div class="bg-${color}-50 p-4 rounded-2xl border border-${color}-100 flex items-center gap-4 cursor-pointer hover:shadow-xs transition" onclick="viewMedicineDetails(${item.id})">
+                    <div class="bg-${color}-50 p-4 rounded-2xl border border-${color}-100 flex items-center gap-4 cursor-pointer hover:shadow-xs transition" onclick="viewMedicineDetails('${item.id}')">
                         <div class="w-10 h-10 bg-${color}-100 text-${color}-600 rounded-full flex justify-center items-center shrink-0">
-                            <i class="ph ${icon} text-xl"></i>
+                            <i class="ph ph-pill text-xl"></i>
                         </div>
                         <div class="flex-1">
-                            <h4 class="text-sm font-bold text-slate-800">${item.name}</h4>
-                            <p class="text-xs text-slate-500 mt-0.5">${desc}</p>
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-sm font-bold text-slate-800">${item.name}</h4>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">${item.stockType || 'Single Tablet'}</span>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-0.5">Stock: <strong>${item.count} units</strong> (1-Qty: ${item.weightQty1 || 12}g • 2-Qty: ${item.weightQty2 || 22}g)</p>
                         </div>
                         <i class="ph ph-caret-right text-slate-400"></i>
                     </div>
@@ -310,7 +735,7 @@
             const container = document.getElementById('stock-list-container');
             container.innerHTML = '';
 
-            const filtered = inventory.filter(i => i.name.toLowerCase().includes(query.toLowerCase()));
+            const filtered = inventory.filter(i => i.name && (i.name.toLowerCase().includes(query.toLowerCase()) || String(i.id).toLowerCase().includes(query.toLowerCase())));
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">No items found matching "${query}"</div>`;
@@ -324,19 +749,31 @@
                 let statusBadge = 'bg-teal-50 text-teal-700';
                 if(item.status === 'Expired') statusBadge = 'bg-red-50 text-red-700';
                 if(item.status === 'Low Stock') statusBadge = 'bg-amber-50 text-amber-700';
+                if(item.status === 'Out of Stock') statusBadge = 'bg-rose-100 text-rose-700';
 
                 container.innerHTML += `
-                    <div class="p-4 ${border} flex items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors" onclick="viewMedicineDetails(${item.id})">
+                    <div class="p-4 ${border} flex items-center gap-4 cursor-pointer hover:bg-slate-50 transition-colors group" onclick="viewMedicineDetails('${item.id}')">
                         <div class="w-10 h-10 bg-slate-100 text-slate-600 rounded-xl flex justify-center items-center">
                             <i class="ph ph-pill text-xl"></i>
                         </div>
                         <div class="flex-1">
-                            <h4 class="text-sm font-semibold text-slate-800">${item.name}</h4>
-                            <p class="text-[11px] text-slate-400 mt-0.5 uppercase tracking-wider">${item.type} Tag</p>
+                            <div class="flex items-center gap-2">
+                                <h4 class="text-sm font-semibold text-slate-800">${item.name}</h4>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-teal-50 text-teal-700">${item.stockType || 'Single Tablet'}</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-0.5">RFID: <strong class="font-mono text-teal-700">${item.tagUid || item.id}</strong> • 1-Qty: ${item.weightQty1 || 12}g • 2-Qty: ${item.weightQty2 || 22}g</p>
                         </div>
-                        <div class="text-right">
-                            <p class="text-sm font-bold text-slate-800">${item.count} Unit(s)</p>
-                            <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md mt-0.5 ${statusBadge}">${item.status}</span>
+                        <div class="text-right flex items-center gap-3">
+                            <div>
+                                <p class="text-sm font-bold text-slate-800">${item.count} Units</p>
+                                <span class="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-md mt-0.5 ${statusBadge}">${item.status}</span>
+                            </div>
+                            <button onclick="event.stopPropagation(); openEditRfidModal('${item.id}')" title="Modify RFID & Product" class="p-2 text-slate-400 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition cursor-pointer">
+                                <i class="ph ph-pencil-simple text-lg"></i>
+                            </button>
+                            <button onclick="event.stopPropagation(); deleteProduct('${item.id}', '${item.name}')" title="Delete Product" class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer">
+                                <i class="ph ph-trash text-lg"></i>
+                            </button>
                         </div>
                     </div>
                 `;
@@ -347,83 +784,103 @@
             renderStock(query);
         }
 
-        // --- Bottom Sheet / Modal Logic ---
-        const backdrop = document.getElementById('sheet-backdrop');
-        const sheet = document.getElementById('bottom-sheet');
-        const sheetContent = document.getElementById('sheet-content');
+        function viewMedicineDetails(id) {
+            const data = inventory.find(i => String(i.id) === String(id));
+            if (!data) return;
 
-        function openBottomSheet(type, data = null) {
-            backdrop.classList.remove('pointer-events-none');
-            backdrop.classList.replace('opacity-0', 'opacity-100');
-            sheet.classList.remove('translate-y-full', 'opacity-0');
-            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+            const w1 = data.weightQty1 || ((data.unitWeightGrams || 10) + (data.tareWeightGrams || 0));
+            const w2 = data.weightQty2 || (((data.unitWeightGrams || 10) * 2) + (data.tareWeightGrams || 0));
+            const unitW = data.unitWeightGrams || (w2 - w1);
 
-            if (type === 'notifications') {
-                sheetContent.innerHTML = `
-                    <h3 class="text-xl font-bold text-slate-800 mb-2">Notifications</h3>
-                    <p class="text-sm text-slate-500 mb-4">System alerts from ESP32</p>
-                    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200 text-sm">Cabinet door was left open at 10:42 AM.</div>
-                `;
-            } else if (type === 'medicine' && data) {
-                sheetContent.innerHTML = `
-                    <div class="flex justify-center mb-4">
-                        <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex justify-center items-center">
-                            <i class="ph ph-pill text-3xl"></i>
-                        </div>
+            const html = `
+                <div class="flex justify-center mb-4">
+                    <div class="w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex justify-center items-center">
+                        <i class="ph ph-pill text-3xl"></i>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-800 text-center mb-1">${data.name}</h3>
-                    <p class="text-center text-sm font-medium text-slate-500 mb-6">Status: <span class="text-teal-600">${data.status}</span></p>
-                    
-                    <div class="space-y-3 mb-6">
-                        <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
-                            <span class="text-sm text-slate-500">Inventory Count</span>
-                            <span class="text-sm font-bold text-slate-800">${data.count} Units</span>
-                        </div>
-                        <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
-                            <span class="text-sm text-slate-500">Expiry Date</span>
-                            <span class="text-sm font-bold text-slate-800">${data.expiry}</span>
-                        </div>
-                        <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
-                            <span class="text-sm text-slate-500">Tag Type</span>
-                            <span class="text-sm font-bold text-slate-800">${data.type}</span>
-                        </div>
+                </div>
+                <h3 class="text-2xl font-bold text-slate-800 text-center mb-1">${data.name}</h3>
+                <p class="text-center text-xs font-semibold text-teal-600 mb-6">Stock Type: <span class="bg-teal-50 px-2 py-0.5 rounded text-teal-700 font-bold">${data.stockType || 'Single Tablet'}</span></p>
+                
+                <div class="space-y-3 mb-6">
+                    <div class="flex justify-between p-3 bg-teal-50/60 rounded-lg border border-teal-100">
+                        <span class="text-sm font-semibold text-teal-800">RFID Tag UID Value</span>
+                        <span class="text-sm font-mono font-extrabold text-teal-700">${data.tagUid || data.id}</span>
                     </div>
-                    <button class="w-full py-3 bg-teal-600 text-white font-semibold rounded-xl shadow-md hover:bg-teal-700 transition" onclick="closeBottomSheet()">Done</button>
-                `;
-            } else if (type === 'scanResult') {
-                sheetContent.innerHTML = `
-                    <div class="flex justify-center mb-4">
-                        <div class="w-16 h-16 bg-green-100 text-green-600 rounded-full flex justify-center items-center">
-                            <i class="ph ph-check-circle text-3xl"></i>
-                        </div>
+                    <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                        <span class="text-sm text-slate-500">Remaining Units</span>
+                        <span class="text-sm font-bold text-slate-800">${data.count} Units</span>
                     </div>
-                    <h3 class="text-xl font-bold text-slate-800 text-center mb-2">Item Scanned!</h3>
-                    <p class="text-center text-sm text-slate-500 mb-6">Lisinopril 10mg added to inventory.</p>
-                    <button class="w-full py-3 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition" onclick="closeBottomSheet()">View in Stock</button>
-                `;
+                    <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                        <span class="text-sm text-slate-500">1 Quantity Total Weight</span>
+                        <span class="text-sm font-bold text-slate-800">${w1} g</span>
+                    </div>
+                    <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                        <span class="text-sm text-slate-500">2 Quantity Total Weight</span>
+                        <span class="text-sm font-bold text-slate-800">${w2} g</span>
+                    </div>
+                    <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                        <span class="text-sm text-slate-500">Calculated Single Unit Wt</span>
+                        <span class="text-sm font-bold text-teal-700">${unitW.toFixed(1)} g / unit</span>
+                    </div>
+                    <div class="flex justify-between p-3 bg-slate-50 rounded-lg">
+                        <span class="text-sm text-slate-500">Expiry Date</span>
+                        <span class="text-sm font-bold text-slate-800">${data.expiry}</span>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button class="w-1/3 py-3 bg-teal-50 text-teal-700 font-semibold rounded-xl hover:bg-teal-100 transition flex items-center justify-center gap-1.5 border border-teal-200 cursor-pointer" onclick="openEditRfidModal('${data.id}')">
+                        <i class="ph ph-pencil-simple text-lg"></i> Modify RFID
+                    </button>
+                    <button class="w-1/3 py-3 bg-red-50 text-red-600 font-semibold rounded-xl hover:bg-red-100 transition flex items-center justify-center gap-1.5 border border-red-200 cursor-pointer" onclick="deleteProduct('${data.id}', '${data.name}')">
+                        <i class="ph ph-trash text-lg"></i> Delete
+                    </button>
+                    <button class="w-1/3 py-3 bg-teal-600 text-white font-semibold rounded-xl shadow-md hover:bg-teal-700 transition cursor-pointer" onclick="closeBottomSheet()">Done</button>
+                </div>
+            `;
+            openModalHtml(html);
+        }
+
+        async function simulateEspWeightUpdate() {
+            const tagUid = document.getElementById('scan-tag-id').value.trim() || 'RFID-84920';
+            const weightQty1 = Number(document.getElementById('scan-w1').value) || 12;
+            const weightQty2 = Number(document.getElementById('scan-w2').value) || 22;
+            const btn = document.getElementById('scan-btn');
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Posting ESP32 Weight Update...';
+            }
+
+            try {
+                const res = await fetch('/api/esp/medicine/weight-update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        tagUid, weightGrams: weightQty2, weightQty1, weightQty2
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    await fetchInventoryFromApi();
+                    alert(`ESP32 Load Cell Update Success!\n\n${data.message}`);
+                } else {
+                    alert('ESP32 Update Error: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('API Error: ' + err.message);
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Post ESP32 Weight Update to API';
+                }
             }
         }
 
-        function closeBottomSheet() {
-            backdrop.classList.add('pointer-events-none');
-            backdrop.classList.replace('opacity-100', 'opacity-0');
-            sheet.classList.add('translate-y-full', 'opacity-0');
-            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
-        }
-
-        function viewMedicineDetails(id) {
-            const item = inventory.find(i => i.id === id);
-            if(item) openBottomSheet('medicine', item);
-        }
-
-        function simulateScan() {
-            setTimeout(() => {
-                openBottomSheet('scanResult');
-            }, 500);
-        }
-
-        // Initialize App
-        renderHome();
+        // Initialize App with URL Parameter & Hash Routing
+        const initialPage = getPageFromUrl();
+        switchPage(initialPage, false);
+        fetchInventoryFromApi();
     </script>
 </body>
 </html>

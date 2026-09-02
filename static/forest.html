@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Chart.js CDN for Live Analytics & History -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
         body {
@@ -23,24 +25,52 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
-        .bg-topographic {
-            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
-            background-size: 20px 20px;
-            background-color: #f8fafc;
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+        .animate-ring {
+            animation: pulse-ring 1.5s infinite ease-in-out;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased">
+<body class="min-h-screen flex flex-col bg-slate-100 text-slate-800 antialiased relative">
 
-    <!-- Global Header -->
-    <header class="bg-emerald-800 text-white sticky top-0 z-30 shadow-md">
+    <!-- Instant Hazard Notification Banner Overlay (SSE Triggered) -->
+    <div id="instant-hazard-toast" class="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4 transition-all duration-300 transform -translate-y-20 opacity-0 pointer-events-none">
+        <div id="toast-bg" class="bg-red-600 text-white p-4 rounded-2xl shadow-2xl border border-red-400 flex items-center justify-between gap-4 animate-ring">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                    <i class="ph-fill ph-warning-octagon text-3xl text-white" id="toast-icon"></i>
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded" id="toast-tag">INSTANT HAZARD ALERT</span>
+                    <h4 class="text-sm font-extrabold mt-0.5" id="toast-title">Tree Cutting Detected!</h4>
+                    <p class="text-xs text-white/90" id="toast-desc">Chainsaw sound / vibration in Sector 4B (NODE-F01)</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 shrink-0">
+                <button onclick="dispatchRangerFromToast()" class="px-3 py-2 bg-white text-red-700 text-xs font-bold rounded-xl hover:bg-slate-100 transition shadow-sm cursor-pointer">
+                    Dispatch Patrol
+                </button>
+                <button onclick="closeToast()" class="p-1 text-white/80 hover:text-white cursor-pointer"><i class="ph ph-x text-lg"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Fixed Top Header -->
+    <header class="bg-emerald-800 text-white fixed top-0 left-0 right-0 z-30 shadow-md">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
             <div class="flex items-center gap-3">
                 <div class="w-10 h-10 bg-emerald-700 text-white rounded-xl flex items-center justify-center shadow-inner">
                     <i class="ph-fill ph-tree text-2xl"></i>
                 </div>
                 <div>
-                    <p class="text-xs text-emerald-200 font-medium" id="header-subtitle">Ranger Dashboard</p>
+                    <div class="flex items-center gap-2">
+                        <p class="text-xs text-emerald-200 font-medium" id="header-subtitle">Ranger Dashboard</p>
+                        <span id="sse-status-badge" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-emerald-700/80 text-emerald-100 border border-emerald-600/50">CONNECTING SSE...</span>
+                    </div>
                     <h1 class="text-xl sm:text-2xl font-bold tracking-tight" id="header-title">ForestGuard</h1>
                 </div>
             </div>
@@ -57,7 +87,7 @@
                 </button>
                 <button onclick="switchPage('sensors')" class="nav-btn text-emerald-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="sensors">
                     <i class="ph ph-waveform text-lg"></i>
-                    <span>Telemetry</span>
+                    <span>Analytics</span>
                 </button>
                 <button onclick="switchPage('settings')" class="nav-btn text-emerald-200 hover:text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all" data-target="settings">
                     <i class="ph ph-sliders-horizontal text-lg"></i>
@@ -66,18 +96,20 @@
             </nav>
 
             <div class="flex items-center gap-3">
-                <div class="relative">
-                    <div class="w-10 h-10 bg-emerald-700/60 text-emerald-100 rounded-xl flex justify-center items-center cursor-pointer hover:bg-emerald-600 transition" onclick="openBottomSheet('systemStatus')">
-                        <i class="ph ph-broadcast text-xl animate-pulse"></i>
-                    </div>
-                    <span class="absolute top-0 right-0 w-3 h-3 bg-red-500 border-2 border-emerald-800 rounded-full" id="global-alert-badge"></span>
-                </div>
+                <button onclick="openAddZoneModal()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-xl transition flex items-center gap-1.5 shadow-xs cursor-pointer">
+                    <i class="ph ph-plus-circle text-base"></i>
+                    <span>Add Zone</span>
+                </button>
+                <button onclick="fetchForestDataFromApi()" title="Sync with Firebase API" class="px-3 py-2 bg-emerald-900 text-emerald-100 hover:bg-emerald-700 text-xs font-semibold rounded-xl transition flex items-center gap-1.5 border border-emerald-700/50 cursor-pointer">
+                    <i class="ph ph-arrows-counter-clockwise text-base" id="forest-sync-icon"></i>
+                    <span class="hidden sm:inline">Sync API</span>
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1 pb-24 md:pb-8">
+    <!-- Main Container (Padded for Fixed Header) -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-24 pb-24 md:pt-28 md:pb-8 flex-1">
         
         <!-- PAGE: DASHBOARD -->
         <div id="page-home" class="page space-y-6">
@@ -88,7 +120,7 @@
                     </div>
                     <div>
                         <h2 class="text-3xl font-bold text-slate-800" id="stat-active-nodes">0</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-1">Active Sensor Nodes</p>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Monitored Forest Zones</p>
                     </div>
                 </div>
                 <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-red-200 transition" onclick="switchPage('map')">
@@ -100,66 +132,193 @@
                         <p class="text-xs text-slate-500 font-medium mt-1">Critical Hazard Alerts</p>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between">
-                    <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex justify-center items-center mb-4">
-                        <i class="ph ph-radio text-xl"></i>
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-amber-200 transition" onclick="switchPage('sensors')">
+                    <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex justify-center items-center mb-4">
+                        <i class="ph-fill ph-axe text-xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">LoRa Mesh</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-1">Primary Comms Operational</p>
+                        <h2 class="text-lg font-bold text-slate-800" id="stat-logging-count">0 Active</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Tree Cutting (Sound / Vib)</p>
                     </div>
                 </div>
-                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-emerald-200 transition" onclick="switchPage('sensors')">
+                <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col justify-between cursor-pointer hover:border-purple-200 transition" onclick="openAddZoneModal()">
                     <div class="w-10 h-10 bg-purple-50 text-purple-600 rounded-xl flex justify-center items-center mb-4">
-                        <i class="ph ph-waveform text-xl"></i>
+                        <i class="ph-fill ph-gas-can text-xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-slate-800">Live Telemetry</h2>
-                        <p class="text-xs text-slate-500 font-medium mt-1">DHT22, MQ-2, SW-420</p>
+                        <h2 class="text-lg font-bold text-slate-800">Add Forest Node</h2>
+                        <p class="text-xs text-slate-500 font-medium mt-1">Fire, Gas & Sound / Vib</p>
                     </div>
                 </div>
             </div>
 
-            <!-- Active Hazards Section -->
+            <!-- ESP32 Simulation Trigger Controls for Demo Presentation (Hidden by default, shown only when URL contains #esp) -->
+            <section id="esp-simulation-panel" class="hidden bg-gradient-to-r from-slate-900 to-emerald-950 text-white p-5 rounded-2xl shadow-md border border-emerald-800/40">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+                    <div>
+                        <span class="text-[10px] font-bold tracking-widest text-emerald-400 uppercase">Interactive Hardware Simulation</span>
+                        <h3 class="text-base font-bold">Simulate ESP32 Sensor Triggers (Broken Sensor Fallback)</h3>
+                    </div>
+                    <span class="text-xs text-slate-300">Hits <code class="bg-slate-800 px-2 py-0.5 rounded text-emerald-300">/api/esp/forest/trigger</code></span>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+                    <button onclick="triggerEspSimulation('tree_cut_sound')" class="py-2.5 px-3 bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="ph-fill ph-axe"></i> Sound Cut
+                    </button>
+                    <button onclick="triggerEspSimulation('tree_cut_vibration')" class="py-2.5 px-3 bg-amber-600/30 hover:bg-amber-600/50 text-amber-200 border border-amber-500/40 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="ph-fill ph-wave-sine"></i> Vib Cut
+                    </button>
+                    <button onclick="triggerEspSimulation('tree_cut_both')" class="py-2.5 px-3 bg-amber-600/40 hover:bg-amber-600/70 text-amber-100 border border-amber-400/60 rounded-xl text-xs font-bold transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="ph-fill ph-warning-octagon"></i> Both Cut
+                    </button>
+                    <button onclick="triggerEspSimulation('toxic_gas')" class="py-2.5 px-3 bg-purple-600/30 hover:bg-purple-600/50 text-purple-200 border border-purple-500/40 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="ph-fill ph-gas-can"></i> Toxic Gas
+                    </button>
+                    <button onclick="triggerEspSimulation('fire')" class="py-2.5 px-3 bg-red-600/30 hover:bg-red-600/50 text-red-200 border border-red-500/40 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="ph-fill ph-fire"></i> Wildfire
+                    </button>
+                    <button onclick="triggerEspSimulation('clear')" class="py-2.5 px-3 bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 rounded-xl text-xs font-semibold transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+                        <i class="ph-fill ph-shield-check"></i> Clear/Safe
+                    </button>
+                </div>
+            </section>
+
+            <!-- Active Forest Hazard Alerts -->
             <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
                 <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Live Hazard Alerts</h3>
-                    <span class="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span> Live Monitoring
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        <h3 class="text-lg font-bold text-slate-800">Realtime Forest Hazards & Detection Alerts</h3>
+                    </div>
+                    <span class="text-xs text-emerald-600 font-semibold cursor-pointer hover:underline" onclick="switchPage('map')">View All Zones &rarr;</span>
                 </div>
                 <div id="alerts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Real-Time Telemetry Analytics Trends Graphs -->
+            <section class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-5">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Real-Time Sensor Telemetry Trends</h3>
+                        <p class="text-xs text-slate-400">Live analytics for Tree Cutting (Sound & Vibration) and Environmental Hazards (Gas & Flame Temp)</p>
+                    </div>
+                    <button onclick="switchPage('sensors')" class="text-xs text-emerald-600 font-semibold cursor-pointer hover:underline">
+                        View Full Analytics &rarr;
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Home Chart 1: Tree Cutting Analytics -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="ph-fill ph-axe text-amber-500"></i> Tree Cutting (Chainsaw Sound & Vibration)
+                            </h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Sound dB / Vib Hz</span>
+                        </div>
+                        <div class="h-56 relative">
+                            <canvas id="homeTreeCuttingChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Home Chart 2: Environmental Hazards Analytics -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="ph-fill ph-gas-can text-purple-600"></i> Environmental Hazards (Gas & Temp)
+                            </h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">MQ-135 Gas / Temp</span>
+                        </div>
+                        <div class="h-56 relative">
+                            <canvas id="homeHazardsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Forest Activity & ESP Telemetry Logs -->
+            <section class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">Realtime SSE Telemetry & Ranger Action Logs</h3>
+                        <p class="text-xs text-slate-400">Streamed live via Server-Sent Events (SSE)</p>
+                    </div>
+                    <button onclick="fetchForestDataFromApi()" class="text-xs text-emerald-600 font-semibold cursor-pointer hover:underline">
+                        Sync Firebase Logs &rarr;
+                    </button>
+                </div>
+                <div id="forest-logs-container" class="divide-y divide-slate-100 text-xs">
+                    <!-- Populated via JS -->
                 </div>
             </section>
         </div>
 
         <!-- PAGE: MAP / ZONES -->
         <div id="page-map" class="page hidden space-y-6">
-            <div class="bg-topographic p-6 rounded-2xl border border-slate-200 shadow-xs">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-bold text-slate-800">Forest Zone Grid</h3>
-                    <span class="text-xs text-slate-500 font-medium">Interactive Sensor Node List</span>
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Monitored Forest Zones & ESP Nodes</h3>
+                    <p class="text-xs text-slate-400">Real-time status of all deployed hardware nodes</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="nodes-container">
-                    <!-- Populated by JS -->
-                </div>
+                <button onclick="openAddZoneModal()" class="px-4 py-2 bg-emerald-700 text-white text-xs font-semibold rounded-xl hover:bg-emerald-800 transition cursor-pointer">
+                    + Add Forest Node
+                </button>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="nodes-container">
+                <!-- Populated by JS -->
             </div>
         </div>
 
-        <!-- PAGE: SENSORS -->
+        <!-- PAGE: SENSORS / ANALYTICS (Charts & Local Storage Persistence) -->
         <div id="page-sensors" class="page hidden space-y-6">
-            <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
-                <div>
-                    <h3 class="text-lg font-bold text-slate-800">Network Hardware Telemetry</h3>
-                    <p class="text-xs text-slate-500">Real-time readings from ESP32 nodes</p>
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800">Real-Time Sensor Telemetry Analytics</h3>
+                        <p class="text-xs text-slate-500">Live trends for Chainsaw Sound (dB), SW-420 Vibration (Hz), MQ-135 Toxic Gas (PPM), and Flame Temp (°C)</p>
+                    </div>
+                    <button onclick="clearAnalyticsHistory()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold rounded-xl transition cursor-pointer">
+                        Clear Chart History
+                    </button>
                 </div>
-                <button onclick="renderSensors()" class="text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 px-4 py-2 rounded-xl transition">
-                    <i class="ph ph-arrows-counter-clockwise mr-1"></i> Refresh Data
-                </button>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Chart 1: Tree Cutting Analytics (Sound & Vibration) -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="ph-fill ph-axe text-amber-500"></i> Tree Cutting (Chainsaw Sound & Vibration)
+                            </h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-800">Sound dB / Vib Hz</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="treeCuttingChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Chart 2: Environmental Hazards Analytics (Toxic Gas & Fire Temp) -->
+                    <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                        <div class="flex justify-between items-center mb-3">
+                            <h4 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="ph-fill ph-gas-can text-purple-600"></i> Environmental Hazards (Toxic Gas & Temp)
+                            </h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-800">MQ-135 Gas PPM / Temp °C</span>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="hazardsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="telemetry-container">
-                <!-- Populated by JS -->
+
+            <!-- Sensor Telemetry Grid Cards -->
+            <div class="bg-white p-6 rounded-2xl shadow-xs border border-slate-200">
+                <h3 class="text-base font-bold text-slate-800 mb-4">Node Hardware Breakdown</h3>
+                <div id="sensors-grid-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Populated by JS -->
+                </div>
             </div>
         </div>
 
@@ -168,62 +327,45 @@
             <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
                 <div class="p-5 border-b border-slate-100 flex justify-between items-center">
                     <div class="flex items-center gap-3">
-                        <i class="ph ph-radio text-2xl text-emerald-700"></i>
+                        <i class="ph ph-broadcast text-2xl text-emerald-600 animate-pulse"></i>
                         <div>
-                            <p class="text-sm font-bold text-slate-800">LoRa Backup Comms</p>
-                            <p class="text-xs text-slate-400">915 MHz Frequency Band</p>
+                            <p class="text-sm font-bold text-slate-800">Server-Sent Events (SSE) Stream</p>
+                            <p class="text-xs text-slate-400">/api/forest/sse & /api/esp/forest/trigger</p>
                         </div>
                     </div>
-                    <div class="w-11 h-6 bg-emerald-600 rounded-full relative cursor-pointer">
-                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-xs"></div>
-                    </div>
-                </div>
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center">
-                    <div class="flex items-center gap-3">
-                        <i class="ph ph-bell-ringing text-2xl text-emerald-700"></i>
-                        <div>
-                            <p class="text-sm font-bold text-slate-800">Ranger Dispatch Push Alerts</p>
-                            <p class="text-xs text-slate-400">Instant notification on acoustic / thermal anomaly</p>
-                        </div>
-                    </div>
-                    <div class="w-11 h-6 bg-emerald-600 rounded-full relative cursor-pointer">
-                        <div class="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow-xs"></div>
-                    </div>
+                    <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-lg">Realtime Stream Active</span>
                 </div>
             </div>
-            <button onclick="openBottomSheet('systemStatus')" class="w-full py-3.5 text-emerald-800 font-semibold bg-emerald-50 rounded-xl border border-emerald-200 hover:bg-emerald-100 transition">
-                Run Hardware Diagnostics
-            </button>
         </div>
     </main>
 
-    <!-- Mobile Bottom Navigation Bar -->
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-3 flex justify-between items-center z-40 shadow-lg">
-        <button onclick="switchPage('home')" class="nav-btn text-emerald-700 flex flex-col items-center gap-1 w-16" data-target="home">
-            <i class="ph-fill ph-squares-four text-2xl"></i>
-            <span class="text-[10px] font-semibold">Dashboard</span>
+    <!-- Global Fixed Bottom Navigation Bar -->
+    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-emerald-900 border-t border-emerald-800 px-6 py-3 flex justify-between items-center z-40 shadow-lg text-white">
+        <button onclick="switchPage('home')" class="nav-btn text-white flex flex-col items-center gap-1 w-16 cursor-pointer" data-target="home">
+            <i class="ph-fill ph-house text-2xl"></i>
+            <span class="text-[10px] font-semibold">Home</span>
         </button>
-        <button onclick="switchPage('map')" class="nav-btn text-slate-400 hover:text-emerald-700 flex flex-col items-center gap-1 w-16 transition" data-target="map">
+        <button onclick="switchPage('map')" class="nav-btn text-emerald-300 hover:text-white flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="map">
             <i class="ph ph-map-trifold text-2xl"></i>
             <span class="text-[10px] font-semibold">Zones</span>
         </button>
-        <button onclick="switchPage('sensors')" class="nav-btn text-slate-400 hover:text-emerald-700 flex flex-col items-center gap-1 w-16 transition" data-target="sensors">
+        <button onclick="switchPage('sensors')" class="nav-btn text-emerald-300 hover:text-white flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="sensors">
             <i class="ph ph-waveform text-2xl"></i>
-            <span class="text-[10px] font-semibold">Telemetry</span>
+            <span class="text-[10px] font-semibold">Analytics</span>
         </button>
-        <button onclick="switchPage('settings')" class="nav-btn text-slate-400 hover:text-emerald-700 flex flex-col items-center gap-1 w-16 transition" data-target="settings">
+        <button onclick="switchPage('settings')" class="nav-btn text-emerald-300 hover:text-white flex flex-col items-center gap-1 w-16 transition cursor-pointer" data-target="settings">
             <i class="ph ph-sliders-horizontal text-2xl"></i>
             <span class="text-[10px] font-semibold">Settings</span>
         </button>
     </nav>
 
-    <!-- Modal Overlay Backdrop -->
+    <!-- Modal Backdrop -->
     <div id="sheet-backdrop" class="fixed inset-0 bg-slate-900/50 z-50 opacity-0 pointer-events-none transition-opacity duration-300 backdrop-blur-xs" onclick="closeBottomSheet()"></div>
     
     <!-- Modal Container -->
-    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-md bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
+    <div id="bottom-sheet" class="fixed bottom-0 md:bottom-auto md:top-1/2 left-0 md:left-1/2 right-0 md:right-auto md:-translate-x-1/2 md:-translate-y-1/2 w-full md:max-w-lg bg-white rounded-t-3xl md:rounded-2xl z-50 transform translate-y-full md:translate-y-0 md:scale-95 opacity-0 transition-all duration-300 shadow-2xl flex flex-col max-h-[90vh]">
         <div class="flex justify-center p-3 cursor-pointer md:hidden" onclick="closeBottomSheet()">
-            <div class="w-12 h-1.5 bg-slate-300 rounded-full"></div>
+            <div class="w-12 h-1.5 bg-slate-200 rounded-full"></div>
         </div>
         <div id="sheet-content" class="p-6 overflow-y-auto no-scrollbar">
             <!-- Content injected via JS -->
@@ -232,44 +374,79 @@
 
     <!-- Application Logic -->
     <script>
-        // --- Mock Data Store ---
-        const nodes = [
-            { 
-                id: 'ESP-N01', zone: 'North Ridge', status: 'Fire', battery: '85%', comms: 'Wi-Fi',
-                sensors: { temp: 68.4, hum: 18, smoke: 850, gas: 120, vibration: 0, acoustic: 45 }
-            },
-            { 
-                id: 'ESP-N02', zone: 'East Boundary', status: 'Logging', battery: '92%', comms: 'LoRa',
-                sensors: { temp: 29.1, hum: 65, smoke: 40, gas: 90, vibration: 12.5, acoustic: 105 }
-            },
-            { 
-                id: 'ESP-N03', zone: 'River Basin', status: 'Toxic Gas', battery: '78%', comms: 'Wi-Fi',
-                sensors: { temp: 26.5, hum: 70, smoke: 450, gas: 450, vibration: 0, acoustic: 30 }
-            },
-            { 
-                id: 'ESP-N04', zone: 'Pine Valley', status: 'Safe', battery: '100%', comms: 'Wi-Fi',
-                sensors: { temp: 27.2, hum: 62, smoke: 25, gas: 80, vibration: 0.1, acoustic: 35 }
-            },
-            { 
-                id: 'ESP-N05', zone: 'West Checkpoint', status: 'Safe', battery: '64%', comms: 'LoRa',
-                sensors: { temp: 28.0, hum: 60, smoke: 30, gas: 85, vibration: 0, acoustic: 40 }
-            }
-        ];
+        let nodes = [];
+        let logs = [];
+        let activeToastData = null;
+        let treeCuttingChartInstance = null;
+        let hazardsChartInstance = null;
 
-        // --- Navigation Logic ---
         const pageConfigs = {
             'home': { title: 'ForestGuard', sub: 'Ranger Dashboard' },
             'map': { title: 'Node Locations', sub: 'Forest Zoning Map' },
-            'sensors': { title: 'Sensor Telemetry', sub: 'Live Hardware Data' },
+            'sensors': { title: 'Analytics & Sensors', sub: 'Live Telemetry Trends' },
             'settings': { title: 'Configuration', sub: 'System Settings' }
         };
 
-        function switchPage(pageId) {
+        const hazardConfig = {
+            'Fire': { color: 'red', icon: 'ph-fire', title: 'Wildfire Flame / Thermal Alert' },
+            'Logging': { color: 'amber', icon: 'ph-axe', title: 'Tree Cutting (Sound / Vibration)' },
+            'Toxic Gas': { color: 'purple', icon: 'ph-gas-can', title: 'Toxic Gas Accumulation Alert' },
+            'Safe': { color: 'emerald', icon: 'ph-shield-check', title: 'Status Normal' }
+        };
+
+        // Modal Helpers
+        function getModalDom() {
+            return {
+                backdrop: document.getElementById('sheet-backdrop'),
+                sheet: document.getElementById('bottom-sheet'),
+                sheetContent: document.getElementById('sheet-content')
+            };
+        }
+
+        function openModalHtml(htmlContent) {
+            const { backdrop, sheet, sheetContent } = getModalDom();
+            if (!backdrop || !sheet || !sheetContent) return;
+
+            sheetContent.innerHTML = htmlContent;
+            backdrop.classList.remove('pointer-events-none');
+            backdrop.classList.replace('opacity-0', 'opacity-100');
+            sheet.classList.remove('translate-y-full', 'opacity-0');
+            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        function closeBottomSheet() {
+            const { backdrop, sheet } = getModalDom();
+            if (!backdrop || !sheet) return;
+
+            backdrop.classList.add('pointer-events-none');
+            backdrop.classList.replace('opacity-100', 'opacity-0');
+            sheet.classList.add('translate-y-full', 'opacity-0');
+            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+        }
+
+        // URL Routing
+        function getPageFromUrl() {
+            const hash = window.location.hash.replace('#', '').trim().toLowerCase();
+            if (hash && pageConfigs[hash]) return hash;
+
+            const urlParams = new URLSearchParams(window.location.search);
+            const paramPage = urlParams.get('page')?.trim().toLowerCase();
+            if (paramPage && pageConfigs[paramPage]) return paramPage;
+
+            return 'home';
+        }
+
+        function switchPage(pageId, updateUrl = true) {
+            if (!pageConfigs[pageId]) pageId = 'home';
+
             document.querySelectorAll('.page').forEach(page => page.classList.add('hidden'));
-            document.getElementById(`page-${pageId}`).classList.remove('hidden');
+            const targetPage = document.getElementById(`page-${pageId}`);
+            if (targetPage) targetPage.classList.remove('hidden');
             
-            document.getElementById('header-title').innerText = pageConfigs[pageId].title;
-            document.getElementById('header-subtitle').innerText = pageConfigs[pageId].sub;
+            if (pageConfigs[pageId]) {
+                document.getElementById('header-title').innerText = pageConfigs[pageId].title;
+                document.getElementById('header-subtitle').innerText = pageConfigs[pageId].sub;
+            }
 
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const icon = btn.querySelector('i');
@@ -284,79 +461,505 @@
                 }
             });
 
+            if (updateUrl && window.location.hash !== `#${pageId}`) {
+                history.pushState(null, '', `#${pageId}`);
+            }
+
             if(pageId === 'home') renderHome();
             if(pageId === 'map') renderMap();
-            if(pageId === 'sensors') renderSensors();
+            if(pageId === 'sensors') {
+                renderSensors();
+                initOrUpdateAnalyticsCharts();
+            }
             closeBottomSheet();
         }
 
-        const hazardConfig = {
-            'Fire': { color: 'red', icon: 'ph-fire', title: 'Forest Fire Detected' },
-            'Logging': { color: 'amber', icon: 'ph-axe', title: 'Illegal Logging Activity' },
-            'Toxic Gas': { color: 'purple', icon: 'ph-gas-can', title: 'Toxic Gas Accumulation' },
-            'Safe': { color: 'emerald', icon: 'ph-shield-check', title: 'Status Normal' }
-        };
+        function checkEspPanelVisibility() {
+            const hash = window.location.hash.toLowerCase();
+            const search = window.location.search.toLowerCase();
+            const isEspMode = hash.includes('esp') || search.includes('esp');
+
+            const panel = document.getElementById('esp-simulation-panel');
+            if (panel) {
+                if (isEspMode) {
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            }
+        }
+
+        window.addEventListener('hashchange', () => {
+            switchPage(getPageFromUrl(), false);
+            checkEspPanelVisibility();
+        });
+        window.addEventListener('popstate', () => {
+            switchPage(getPageFromUrl(), false);
+            checkEspPanelVisibility();
+        });
+
+        // --- ESP32 Simulation Trigger Function ---
+        async function triggerEspSimulation(state) {
+            try {
+                const res = await fetch('/api/esp/forest/trigger', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ state, nodeId: 'NODE-F01', zone: 'Sector 4B - North Ridge' })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await fetchForestDataFromApi();
+                }
+            } catch (err) {
+                console.error('Trigger simulation failed:', err);
+            }
+        }
+
+        // --- Instant Web Audio Alert Sound Chime ---
+        function playAlertChime() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.3);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } catch (err) {}
+        }
+
+        // --- Instant Hazard Notification Toast (Triggered via SSE) ---
+        function showInstantHazardNotification(data) {
+            activeToastData = data;
+            const toast = document.getElementById('instant-hazard-toast');
+            const bg = document.getElementById('toast-bg');
+            const icon = document.getElementById('toast-icon');
+            const title = document.getElementById('toast-title');
+            const desc = document.getElementById('toast-desc');
+            const tag = document.getElementById('toast-tag');
+
+            playAlertChime();
+
+            let titleText = 'Hazard Alert!';
+            let iconClass = 'ph-warning-octagon';
+            let bgClass = 'bg-red-600 border-red-400';
+
+            if (data.status === 'Logging' || data.treeCuttingDetected) {
+                titleText = '🚨 Tree Cutting Detected! (Chainsaw Sound / Vibration)';
+                iconClass = 'ph-axe';
+                bgClass = 'bg-amber-600 border-amber-400';
+                tag.innerText = 'TREE CUTTING ALERT';
+            } else if (data.status === 'Toxic Gas' || data.toxicGasDetected) {
+                titleText = '☣️ Toxic Gas Accumulation Alert!';
+                iconClass = 'ph-gas-can';
+                bgClass = 'bg-purple-700 border-purple-400';
+                tag.innerText = 'TOXIC GAS ALERT';
+            } else if (data.status === 'Fire' || data.fireDetected) {
+                titleText = '🔥 Wildfire Flame Alert!';
+                iconClass = 'ph-fire';
+                bgClass = 'bg-red-600 border-red-400';
+                tag.innerText = 'WILDFIRE ALERT';
+            }
+
+            toast.className = 'fixed top-20 left-1/2 -translate-x-1/2 z-50 w-full max-w-xl px-4 transition-all duration-300 transform translate-y-0 opacity-100';
+            bg.className = `${bgClass} text-white p-4 rounded-2xl shadow-2xl border flex items-center justify-between gap-4 animate-ring`;
+            icon.className = `ph-fill ${iconClass} text-3xl text-white`;
+            title.innerText = titleText;
+            desc.innerText = `${data.zone || 'Forest Zone'} (${data.nodeId || 'ESP32 Node'}) — Instant SSE Telemetry Alert`;
+
+            // Record data point to Analytics History in LocalStorage
+            recordAnalyticsPoint({
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                sound: data.soundDecibels || (data.soundDetected ? 88 : 38),
+                vibration: data.vibrationLevel || (data.vibrationDetected ? 8.5 : 0.2),
+                toxicGas: data.toxicGasPpm || (data.toxicGasDetected ? 380 : 25),
+                temp: data.temp || (data.fireDetected ? 65 : 28)
+            });
+        }
+
+        function closeToast() {
+            const toast = document.getElementById('instant-hazard-toast');
+            if (toast) {
+                toast.classList.add('-translate-y-20', 'opacity-0', 'pointer-events-none');
+                toast.classList.remove('translate-y-0', 'opacity-100');
+            }
+        }
+
+        function dispatchRangerFromToast() {
+            if (activeToastData) {
+                dispatchRangerPatrol(activeToastData.nodeId, activeToastData.zone);
+                closeToast();
+            }
+        }
+
+        // --- Pure Realtime Server-Sent Events (SSE) Stream Listener (Single GET Connection) ---
+        function initRealtimeSseStream() {
+            if (!window.EventSource) return;
+
+            const eventSource = new EventSource('/api/forest/sse');
+
+            eventSource.onopen = () => {
+                const badge = document.getElementById('sse-status-badge');
+                if (badge) {
+                    badge.innerText = 'SINGLE SSE STREAM ACTIVE';
+                    badge.classList.replace('bg-emerald-700/80', 'bg-emerald-900');
+                    badge.classList.replace('text-emerald-100', 'text-emerald-200');
+                }
+            };
+
+            eventSource.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Single GET call initial data load directly over SSE stream!
+                    if (data.type === 'INITIAL_DATA') {
+                        if (Array.isArray(data.nodes)) nodes = data.nodes;
+                        if (Array.isArray(data.logs)) logs = data.logs;
+                        renderHome();
+                        renderMap();
+                        renderSensors();
+                        renderForestLogs();
+                        return;
+                    }
+
+                    if (data.type === 'TELEMETRY_ALERT' || data.type === 'NODE_UPDATED' || data.type === 'RANGER_DISPATCH') {
+                        // 1. Update UI node list and logs directly from SSE payload FIRST!
+                        if (data.node) {
+                            const idx = nodes.findIndex(n => (n.nodeId || n.id) === (data.node.nodeId || data.node.id));
+                            if (idx >= 0) nodes[idx] = data.node;
+                            else nodes.push(data.node);
+                        }
+                        if (data.log) {
+                            logs.unshift(data.log);
+                            if (logs.length > 25) logs.pop();
+                        }
+
+                        // 2. Trigger instant hazard toast overlay or close toast if safe
+                        if (data.status === 'Safe' || (data.node && data.node.status === 'Safe')) {
+                            closeToast();
+                            recordAnalyticsPoint({
+                                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                                sound: 38, vibration: 0.2, toxicGas: 25, temp: 28
+                            });
+                        } else if (data.status && data.status !== 'Safe') {
+                            showInstantHazardNotification(data);
+                        }
+
+                        // 3. Re-render UI components immediately
+                        renderHome();
+                        renderMap();
+                        renderSensors();
+                        renderForestLogs();
+                    }
+                } catch (err) {
+                    console.error('Error parsing SSE stream event:', err);
+                }
+            };
+
+            eventSource.onerror = (err) => {
+                console.warn('SSE stream disconnected, auto-reconnecting...', err);
+            };
+        }
+
+        // --- Analytics LocalStorage Persistence Logic ---
+        function getAnalyticsHistory() {
+            try {
+                const saved = localStorage.getItem('forest_analytics_history');
+                if (saved) return JSON.parse(saved);
+            } catch(e) {}
+            
+            // Initial seed history
+            const seed = [];
+            const now = Date.now();
+            for (let i = 6; i >= 0; i--) {
+                const t = new Date(now - (i * 15000));
+                seed.push({
+                    time: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+                    sound: Number((35 + Math.random() * 10).toFixed(1)),
+                    vibration: Number((0.1 + Math.random() * 0.3).toFixed(2)),
+                    toxicGas: Math.floor(20 + Math.random() * 15),
+                    temp: Number((27 + Math.random() * 2).toFixed(1))
+                });
+            }
+            localStorage.setItem('forest_analytics_history', JSON.stringify(seed));
+            return seed;
+        }
+
+        function recordAnalyticsPoint(point) {
+            const history = getAnalyticsHistory();
+            history.push(point);
+            if (history.length > 15) history.shift();
+            localStorage.setItem('forest_analytics_history', JSON.stringify(history));
+            initOrUpdateAnalyticsCharts();
+        }
+
+        function clearAnalyticsHistory() {
+            localStorage.removeItem('forest_analytics_history');
+            initOrUpdateAnalyticsCharts();
+        }
+
+        function createOrUpdateChart(canvasId, instanceRef, chartConfig) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) return null;
+            if (instanceRef) instanceRef.destroy();
+            return new Chart(ctx, chartConfig);
+        }
+
+        function initOrUpdateAnalyticsCharts() {
+            const history = getAnalyticsHistory();
+            const labels = history.map(h => h.time);
+            const soundData = history.map(h => h.sound);
+            const vibData = history.map(h => h.vibration);
+            const gasData = history.map(h => h.toxicGas);
+            const tempData = history.map(h => h.temp);
+
+            const treeChartConfig = {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Chainsaw Sound (dB)',
+                            data: soundData,
+                            borderColor: '#f59e0b',
+                            backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'SW-420 Vibration (Hz)',
+                            data: vibData,
+                            borderColor: '#d97706',
+                            backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                            borderDash: [4, 4],
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            };
+
+            const hazardsChartConfig = {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'MQ-135 Toxic Gas (PPM)',
+                            data: gasData,
+                            borderColor: '#9333ea',
+                            backgroundColor: 'rgba(147, 51, 234, 0.1)',
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Flame Temp (°C)',
+                            data: tempData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            };
+
+            // Render Analytics Tab Charts
+            treeCuttingChartInstance = createOrUpdateChart('treeCuttingChart', treeCuttingChartInstance, treeChartConfig);
+            hazardsChartInstance = createOrUpdateChart('hazardsChart', hazardsChartInstance, hazardsChartConfig);
+
+            // Render Home Dashboard Charts
+            homeTreeCuttingChartInstance = createOrUpdateChart('homeTreeCuttingChart', homeTreeCuttingChartInstance, treeChartConfig);
+            homeHazardsChartInstance = createOrUpdateChart('homeHazardsChart', homeHazardsChartInstance, hazardsChartConfig);
+        }
+
+        // --- Live API Fetch with Cross-Browser State Tracker ---
+        let previousNodeStatuses = {};
+
+        async function fetchForestDataFromApi() {
+            const syncIcon = document.getElementById('forest-sync-icon');
+            if (syncIcon) syncIcon.classList.add('animate-spin');
+
+            try {
+                const res = await fetch('/api/forest');
+                const data = await res.json();
+                if (data.success) {
+                    if (Array.isArray(data.nodes)) {
+                        data.nodes.forEach(node => {
+                            const nodeId = node.nodeId || node.id;
+                            const prevStatus = previousNodeStatuses[nodeId];
+                            
+                            // Detect if status escalated to hazard on another browser/device!
+                            if (prevStatus !== undefined && prevStatus === 'Safe' && node.status !== 'Safe') {
+                                showInstantHazardNotification(node);
+                            } else if (prevStatus !== undefined && prevStatus !== 'Safe' && node.status === 'Safe') {
+                                closeToast();
+                            }
+                            previousNodeStatuses[nodeId] = node.status;
+                        });
+                        nodes = data.nodes;
+                    }
+                    if (Array.isArray(data.logs)) logs = data.logs;
+                }
+            } catch (err) {
+                console.error('Failed to fetch forest data from API:', err);
+            } finally {
+                if (syncIcon) syncIcon.classList.remove('animate-spin');
+                renderHome();
+                renderMap();
+                renderSensors();
+                renderForestLogs();
+            }
+        }
 
         function renderHome() {
-            const activeAlerts = nodes.filter(n => n.status !== 'Safe');
-            
-            document.getElementById('stat-active-nodes').innerText = nodes.length;
-            document.getElementById('stat-critical-alerts').innerText = activeAlerts.length;
-            
-            document.getElementById('global-alert-badge').style.display = activeAlerts.length > 0 ? 'block' : 'none';
-
+            let activeCardsCount = 0;
             const container = document.getElementById('alerts-container');
+            if (!container) return;
             container.innerHTML = '';
 
-            if (activeAlerts.length === 0) {
-                container.innerHTML = `<div class="p-6 text-center text-slate-500 text-sm">All zones are safe. No active hazards.</div>`;
+            let totalCriticalCount = 0;
+            let totalLoggingCount = 0;
+
+            const isEspMode = window.location.hash.toLowerCase().includes('esp') || window.location.search.toLowerCase().includes('esp');
+
+            nodes.forEach(node => {
+                const hazards = Array.isArray(node.activeHazards) && node.activeHazards.length > 0 
+                    ? node.activeHazards 
+                    : (node.status && node.status !== 'Safe' ? [node.status] : []);
+
+                if (hazards.length > 0) totalCriticalCount++;
+                if (hazards.includes('Logging')) totalLoggingCount++;
+
+                hazards.forEach(hazardType => {
+                    activeCardsCount++;
+                    const conf = hazardConfig[hazardType] || hazardConfig['Safe'];
+                    const s = node.sensors || {};
+                    
+                    let triggerText = 'Sensors Normal';
+                    if (hazardType === 'Logging') {
+                        triggerText = `Tree Cut: ${node.soundDetected ? 'Chainsaw Sound (' + (s.soundDecibels || 88) + 'dB)' : ''} ${node.vibrationDetected ? 'Ground Vibration (' + (s.vibrationLevel || 8.5) + 'Hz)' : 'Sound / Vibration'}`;
+                    } else if (hazardType === 'Toxic Gas') {
+                        triggerText = `Toxic Gas: MQ-135 Gas Sensor (${node.toxicGasPpm || s.gas || 380} PPM)`;
+                    } else if (hazardType === 'Fire') {
+                        triggerText = `Wildfire: Flame Sensor / Temp (${s.temp || 65}°C)`;
+                    }
+
+                    container.innerHTML += `
+                        <div class="bg-white p-5 rounded-2xl shadow-xs border-l-4 border-${conf.color}-500 flex flex-col justify-between gap-3 hover:shadow-md transition">
+                            <div class="flex items-start gap-3.5">
+                                <div class="w-11 h-11 bg-${conf.color}-100 text-${conf.color}-600 rounded-2xl flex justify-center items-center shrink-0">
+                                    <i class="ph-fill ${conf.icon} text-2xl"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center justify-between">
+                                        <h4 class="text-sm font-bold text-slate-800">${conf.title}</h4>
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded uppercase bg-${conf.color}-100 text-${conf.color}-800">${hazardType}</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1 flex items-center gap-1 font-medium">
+                                        <i class="ph ph-map-pin text-emerald-600"></i> ${node.zone} (${node.nodeId || node.id})
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-50 rounded-xl p-3 text-xs text-slate-700 border border-slate-100">
+                                <span class="font-bold text-slate-800">Trigger Details:</span> ${triggerText}
+                            </div>
+
+                            <div class="flex gap-2 pt-1">
+                                <button onclick="dispatchRangerPatrol('${node.nodeId || node.id}', '${node.zone}')" class="flex-1 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs cursor-pointer">
+                                    <i class="ph ph-paper-plane-tilt"></i> Dispatch Patrol
+                                </button>
+                                ${isEspMode ? `
+                                    <button onclick="resolveSingleAlert('${node.nodeId || node.id}', '${node.zone}', '${hazardType}')" title="Clear this ${hazardType} hazard alert" class="px-3.5 py-2.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1 border border-emerald-300/60 cursor-pointer">
+                                        <i class="ph ph-check-circle text-base text-emerald-700"></i> Resolve Alert
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+            });
+
+            document.getElementById('stat-active-nodes').innerText = nodes.length;
+            document.getElementById('stat-critical-alerts').innerText = totalCriticalCount;
+            document.getElementById('stat-logging-count').innerText = `${totalLoggingCount} Active`;
+
+            if (activeCardsCount === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-500 text-sm col-span-full bg-emerald-50/50 rounded-2xl border border-emerald-100"><i class="ph-fill ph-shield-check text-2xl text-emerald-600 mb-1"></i><br>All forest zones are safe. No fire, gas, or tree-cutting hazards detected.</div>`;
+            }
+        }
+
+        async function resolveSingleAlert(nodeId, zone, hazardType = '') {
+            if (!confirm(`Resolve ${hazardType ? '\'' + hazardType + '\'' : ''} hazard alert for ${zone} (${nodeId})?`)) {
                 return;
             }
 
-            activeAlerts.forEach(node => {
-                const conf = hazardConfig[node.status];
-                container.innerHTML += `
-                    <div class="bg-white p-4 rounded-2xl shadow-xs border-l-4 border-${conf.color}-500 flex flex-col gap-3 cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
-                        <div class="flex items-start gap-4">
-                            <div class="w-12 h-12 bg-${conf.color}-50 text-${conf.color}-600 rounded-full flex justify-center items-center shrink-0">
-                                <i class="ph-fill ${conf.icon} text-2xl"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="text-sm font-bold text-slate-800">${conf.title}</h4>
-                                <p class="text-xs text-slate-500 mt-1 flex items-center gap-1">
-                                    <i class="ph ph-map-pin"></i> ${node.zone} (${node.id})
-                                </p>
-                            </div>
-                        </div>
-                        <div class="bg-slate-50 rounded-lg p-2.5 text-xs font-medium text-slate-600 flex justify-between items-center">
-                            <span>Sensors Breached</span>
-                            <span class="text-${conf.color}-600 font-bold flex items-center gap-1">View Data &rarr;</span>
-                        </div>
-                    </div>
-                `;
-            });
+            try {
+                const res = await fetch('/api/forest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'RESOLVE_ALERT', nodeId, zone, hazardType })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeBottomSheet();
+                    closeToast();
+                    if (data.node) {
+                        const idx = nodes.findIndex(n => (n.nodeId || n.id) === (data.node.nodeId || data.node.id));
+                        if (idx >= 0) nodes[idx] = data.node;
+                    }
+                    renderHome();
+                    renderMap();
+                    renderSensors();
+                    renderForestLogs();
+                } else {
+                    alert('Error resolving alert: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('API error: ' + err.message);
+            }
         }
 
         function renderMap() {
             const container = document.getElementById('nodes-container');
+            if (!container) return;
             container.innerHTML = '';
 
+            if (nodes.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm col-span-full">No forest nodes configured yet. Click "+ Add Forest Node".</div>`;
+                return;
+            }
+
             nodes.forEach(node => {
-                const conf = hazardConfig[node.status];
+                const conf = hazardConfig[node.status] || hazardConfig['Safe'];
                 const bg = node.status === 'Safe' ? 'bg-white' : `bg-${conf.color}-50 border-${conf.color}-200`;
                 
                 container.innerHTML += `
-                    <div class="${bg} p-4 rounded-2xl shadow-xs border border-slate-200 flex items-center justify-between cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
+                    <div class="${bg} p-4 rounded-2xl shadow-xs border border-slate-200 flex items-center justify-between cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.nodeId || node.id}')">
                         <div class="flex items-center gap-3">
                             <div class="relative">
                                 <div class="w-10 h-10 bg-${conf.color}-100 text-${conf.color}-600 rounded-full flex justify-center items-center">
                                     <i class="ph-fill ${conf.icon} text-xl"></i>
                                 </div>
-                                ${node.status !== 'Safe' ? `<span class="absolute -top-1 -right-1 w-3 h-3 bg-${conf.color}-500 border-2 border-white rounded-full animate-ping"></span>` : ''}
                             </div>
                             <div>
                                 <h4 class="text-sm font-bold text-slate-800">${node.zone}</h4>
-                                <p class="text-xs text-slate-500 font-medium">${node.id} • ${node.comms}</p>
+                                <p class="text-xs text-slate-500 font-medium">${node.nodeId || node.id} • ${node.comms || 'ESP32'}</p>
                             </div>
                         </div>
                         <div class="text-right">
@@ -368,32 +971,35 @@
         }
 
         function renderSensors() {
-            const container = document.getElementById('telemetry-container');
+            const container = document.getElementById('sensors-grid-container');
+            if (!container) return;
             container.innerHTML = '';
 
+            if (nodes.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm col-span-full">No active telemetry nodes.</div>`;
+                return;
+            }
+
             nodes.forEach(node => {
-                const s = node.sensors;
+                const s = node.sensors || {};
                 container.innerHTML += `
-                    <div class="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden cursor-pointer hover:shadow-sm transition" onclick="viewNodeDetails('${node.id}')">
-                        <div class="bg-slate-800 px-4 py-2.5 flex justify-between items-center text-white">
-                            <span class="text-xs font-bold">${node.id} - ${node.zone}</span>
-                            <span class="text-[11px] flex items-center gap-1"><i class="ph ph-battery-full text-emerald-400"></i> ${node.battery}</span>
+                    <div class="bg-white p-5 rounded-2xl shadow-xs border border-slate-200 space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-slate-800">${node.zone} (${node.nodeId || node.id})</h4>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">${node.status}</span>
                         </div>
-                        <div class="p-4 grid grid-cols-3 gap-y-4 gap-x-2">
-                            <div class="text-center">
-                                <i class="ph ph-thermometer text-rose-500 text-xl mb-1"></i>
-                                <p class="text-[10px] text-slate-400">Temp</p>
-                                <p class="text-xs font-bold text-slate-800">${s.temp}°C</p>
+                        <div class="grid grid-cols-3 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-100 text-center">
+                            <div>
+                                <p class="text-[10px] text-slate-400">Fire/Temp</p>
+                                <p class="text-xs font-bold ${node.fireDetected ? 'text-red-600' : 'text-slate-800'}">${s.temp || 28}°C</p>
                             </div>
-                            <div class="text-center">
-                                <i class="ph ph-cloud text-blue-500 text-xl mb-1"></i>
-                                <p class="text-[10px] text-slate-400">Smoke (MQ-2)</p>
-                                <p class="text-xs font-bold text-slate-800">${s.smoke} ppm</p>
+                            <div>
+                                <p class="text-[10px] text-slate-400">Toxic Gas</p>
+                                <p class="text-xs font-bold ${node.toxicGasPpm > 300 ? 'text-purple-600' : 'text-slate-800'}">${node.toxicGasPpm || s.gas || 25} ppm</p>
                             </div>
-                            <div class="text-center">
-                                <i class="ph ph-wave-sine text-amber-500 text-xl mb-1"></i>
-                                <p class="text-[10px] text-slate-400">Vibration</p>
-                                <p class="text-xs font-bold text-slate-800">${s.vibration} Hz</p>
+                            <div>
+                                <p class="text-[10px] text-slate-400">Tree Cut (Vib/Sound)</p>
+                                <p class="text-xs font-bold ${(node.soundDetected || node.vibrationDetected) ? 'text-amber-600 font-bold' : 'text-slate-800'}">${(node.soundDetected || node.vibrationDetected) ? 'DETECTED' : 'Clear'}</p>
                             </div>
                         </div>
                     </div>
@@ -401,89 +1007,204 @@
             });
         }
 
-        // --- Bottom Sheet / Modal Logic ---
-        const backdrop = document.getElementById('sheet-backdrop');
-        const sheet = document.getElementById('bottom-sheet');
-        const sheetContent = document.getElementById('sheet-content');
+        function renderForestLogs() {
+            const container = document.getElementById('forest-logs-container');
+            if (!container) return;
+            container.innerHTML = '';
 
-        function openBottomSheet(type, data = null) {
-            backdrop.classList.remove('pointer-events-none');
-            backdrop.classList.replace('opacity-0', 'opacity-100');
-            sheet.classList.remove('translate-y-full', 'opacity-0');
-            sheet.classList.add('translate-y-0', 'opacity-100', 'scale-100');
-
-            if (type === 'systemStatus') {
-                sheetContent.innerHTML = `
-                    <div class="text-center mb-6">
-                        <div class="inline-flex w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full justify-center items-center mb-3">
-                            <i class="ph ph-check-circle text-3xl"></i>
-                        </div>
-                        <h3 class="text-xl font-bold text-slate-800">Gateway Active</h3>
-                        <p class="text-sm text-slate-500 mt-1">Connected to central LoRa server.</p>
-                    </div>
-                    <button class="w-full py-3 bg-emerald-800 text-white font-semibold rounded-xl hover:bg-emerald-900 transition" onclick="closeBottomSheet()">Dismiss</button>
-                `;
-            } else if (type === 'node' && data) {
-                const conf = hazardConfig[data.status];
-                const s = data.sensors;
-                
-                sheetContent.innerHTML = `
-                    <div class="flex items-center gap-4 mb-6">
-                        <div class="w-14 h-14 bg-${conf.color}-100 text-${conf.color}-600 rounded-2xl flex justify-center items-center shrink-0">
-                            <i class="ph-fill ${conf.icon} text-3xl"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-xl font-bold text-slate-800">${data.zone}</h3>
-                            <p class="text-sm font-medium text-slate-500">Node ID: ${data.id}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-${conf.color}-50 text-${conf.color}-900 p-3 rounded-xl mb-6 text-sm font-semibold border border-${conf.color}-200">
-                        Current Status: ${conf.title}
-                    </div>
-
-                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Sensor Readings</h4>
-                    <div class="grid grid-cols-2 gap-3 mb-6">
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span class="text-[10px] text-slate-500 font-medium block">DHT22 Temp</span>
-                            <span class="text-sm font-bold text-slate-800">${s.temp}°C</span>
-                        </div>
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span class="text-[10px] text-slate-500 font-medium block">MQ-2 Smoke</span>
-                            <span class="text-sm font-bold text-slate-800">${s.smoke} ppm</span>
-                        </div>
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span class="text-[10px] text-slate-500 font-medium block">MQ-135 Gas</span>
-                            <span class="text-sm font-bold text-slate-800">${s.gas} ppm</span>
-                        </div>
-                        <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                            <span class="text-[10px] text-slate-500 font-medium block">SW-420 Vib.</span>
-                            <span class="text-sm font-bold text-slate-800">${s.vibration} Hz</span>
-                        </div>
-                    </div>
-
-                    ${data.status !== 'Safe' 
-                        ? `<button class="w-full py-3.5 bg-emerald-800 text-white font-semibold rounded-xl hover:bg-emerald-900 transition" onclick="closeBottomSheet()">Dispatch Ranger Patrol</button>`
-                        : `<button class="w-full py-3.5 bg-slate-800 text-white font-semibold rounded-xl hover:bg-slate-900 transition" onclick="closeBottomSheet()">Close</button>`
-                    }
-                `;
+            if (logs.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-400 text-sm">No telemetry logs recorded in Firebase /forest/logs yet.</div>`;
+                return;
             }
-        }
 
-        function closeBottomSheet() {
-            backdrop.classList.add('pointer-events-none');
-            backdrop.classList.replace('opacity-100', 'opacity-0');
-            sheet.classList.add('translate-y-full', 'opacity-0');
-            sheet.classList.remove('translate-y-0', 'opacity-100', 'scale-100');
+            logs.forEach(log => {
+                let badgeClass = 'bg-emerald-50 text-emerald-700 border border-emerald-200/60';
+                if (log.level === 'WARNING') badgeClass = 'bg-amber-50 text-amber-700 border border-amber-200/60';
+                if (log.level === 'DANGER') badgeClass = 'bg-red-50 text-red-700 border border-red-200/60';
+                if (log.level === 'INFO') badgeClass = 'bg-blue-50 text-blue-700 border border-blue-200/60';
+
+                container.innerHTML += `
+                    <div class="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/80 transition">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-slate-400 text-[11px] shrink-0">${log.time || '10:00 AM'}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${badgeClass}">${log.type || 'Log'}</span>
+                            <span class="text-slate-700 font-medium">${log.text}</span>
+                        </div>
+                        <span class="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider self-end sm:self-auto">${log.nodeId || 'ESP32'}</span>
+                    </div>
+                `;
+            });
         }
 
         function viewNodeDetails(id) {
-            const node = nodes.find(n => n.id === id);
-            if(node) openBottomSheet('node', node);
+            const data = nodes.find(n => (n.nodeId || n.id) === id);
+            if (!data) return;
+
+            const conf = hazardConfig[data.status] || hazardConfig['Safe'];
+            const s = data.sensors || {};
+            
+            const html = `
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-14 h-14 bg-${conf.color}-100 text-${conf.color}-600 rounded-2xl flex justify-center items-center shrink-0">
+                        <i class="ph-fill ${conf.icon} text-3xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-slate-800">${data.zone}</h3>
+                        <p class="text-sm font-medium text-slate-500">ESP Node ID: ${data.nodeId || data.id}</p>
+                    </div>
+                </div>
+                
+                <div class="bg-${conf.color}-50 text-${conf.color}-900 p-3 rounded-xl mb-6 text-sm font-semibold border border-${conf.color}-200">
+                    Status: ${conf.title}
+                </div>
+
+                <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Hardware Telemetry</h4>
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-500 font-medium block">Flame / Temp</span>
+                        <span class="text-sm font-bold text-slate-800">${s.temp || 28}°C (${data.fireDetected ? 'Flame Detected' : 'Normal'})</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-500 font-medium block">MQ-135 Toxic Gas</span>
+                        <span class="text-sm font-bold text-slate-800">${data.toxicGasPpm || s.gas || 25} ppm</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-500 font-medium block">Chainsaw Sound Sensor</span>
+                        <span class="text-sm font-bold text-slate-800">${data.soundDetected ? 'Sound Alert (Chainsaw)' : 'Quiet'}</span>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <span class="text-[10px] text-slate-500 font-medium block">SW-420 Vibration</span>
+                        <span class="text-sm font-bold text-slate-800">${data.vibrationDetected ? 'Vibration Triggered' : 'Normal'}</span>
+                    </div>
+                </div>
+
+                <button class="w-full py-3.5 bg-emerald-800 text-white font-semibold rounded-xl hover:bg-emerald-900 transition cursor-pointer" onclick="dispatchRangerPatrol('${data.nodeId || data.id}', '${data.zone}')">
+                    Dispatch Ranger Patrol Team
+                </button>
+            `;
+            openModalHtml(html);
         }
 
-        // Initialize App
-        renderHome();
+        async function dispatchRangerPatrol(nodeId, zone) {
+            try {
+                const res = await fetch('/api/forest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'dispatch', nodeId, zone })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeBottomSheet();
+                    alert(`Ranger Patrol Dispatched to ${zone} (${nodeId})`);
+                    fetchForestDataFromApi();
+                }
+            } catch (err) {
+                alert('Dispatch error: ' + err.message);
+            }
+        }
+
+        // Modal: Add Monitored Forest Zone
+        function openAddZoneModal() {
+            const html = `
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="ph ph-plus-circle text-xl text-emerald-600"></i>
+                        <h3 class="text-xl font-bold text-slate-800">Add Monitored Forest Zone</h3>
+                    </div>
+                    <button onclick="closeBottomSheet()" class="text-slate-400 hover:text-slate-600 cursor-pointer"><i class="ph ph-x text-xl"></i></button>
+                </div>
+                <p class="text-xs text-slate-500 mb-4">Configure a new forest zone and assign an ESP32 Node ID.</p>
+
+                <form onsubmit="submitAddZone(event)" class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-slate-700">Forest Zone / Sector Name</label>
+                        <input type="text" id="add-zone-name" required placeholder="e.g. Sector 4B - North Ridge" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm mt-1 focus:outline-none focus:border-emerald-500">
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-emerald-700">Configure ESP32 Node ID</label>
+                            <input type="text" id="add-node-id" required placeholder="e.g. NODE-F01" value="NODE-F0${nodes.length + 1}" class="w-full bg-emerald-50/50 border border-emerald-200 rounded-xl px-3 py-2.5 text-sm font-mono font-bold text-emerald-800 mt-1 focus:outline-none focus:border-emerald-500 uppercase">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Comms Mode</label>
+                            <select id="add-comms" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-emerald-500">
+                                <option value="ESP32 Wi-Fi">ESP32 Wi-Fi</option>
+                                <option value="LoRaWAN 868MHz">LoRaWAN 868MHz</option>
+                                <option value="NB-IoT Cellular">NB-IoT Cellular</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Toxic Gas PPM</label>
+                            <input type="number" id="add-gas" value="25" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-emerald-500">
+                        </div>
+                        <div class="w-1/2">
+                            <label class="text-xs font-bold text-slate-700">Temperature (°C)</label>
+                            <input type="number" id="add-temp" value="28" min="-10" max="100" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-sm mt-1 focus:outline-none focus:border-emerald-500">
+                        </div>
+                    </div>
+
+                    <button type="submit" id="add-zone-btn" class="w-full py-3.5 bg-emerald-700 text-white font-semibold rounded-xl shadow-md hover:bg-emerald-800 transition mt-2 cursor-pointer">
+                        Save Zone Node to Firebase
+                    </button>
+                </form>
+            `;
+            openModalHtml(html);
+        }
+
+        async function submitAddZone(e) {
+            e.preventDefault();
+            const btn = document.getElementById('add-zone-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Saving Zone to Firebase...';
+            }
+
+            const zone = document.getElementById('add-zone-name').value.trim();
+            const nodeId = document.getElementById('add-node-id').value.trim().toUpperCase();
+            const toxicGasPpm = Number(document.getElementById('add-gas').value);
+            const temp = Number(document.getElementById('add-temp').value);
+
+            try {
+                const res = await fetch('/api/forest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'CREATE_ZONE',
+                        nodeId,
+                        zone,
+                        toxicGasPpm,
+                        temp
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    closeBottomSheet();
+                    await fetchForestDataFromApi();
+                } else {
+                    alert('Error saving zone: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('API error: ' + err.message);
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        // Initialize App, Connect Realtime SSE Stream & Init Chart Analytics
+        const initialPage = getPageFromUrl();
+        switchPage(initialPage, false);
+        checkEspPanelVisibility();
+        fetchForestDataFromApi();
+        initRealtimeSseStream();
+        initOrUpdateAnalyticsCharts();
+
+        // 2.0s Continuous Sync Timer across all open browsers & edge isolates
+        setInterval(fetchForestDataFromApi, 2000);
     </script>
 </body>
 </html>
